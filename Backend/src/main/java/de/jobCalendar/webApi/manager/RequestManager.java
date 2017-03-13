@@ -12,6 +12,7 @@ public class RequestManager {
     public String getResponse(String request) throws Exception {
 
         //ToDO: implementieren
+
         return "test123";
     }
 

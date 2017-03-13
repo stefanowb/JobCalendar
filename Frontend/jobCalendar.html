@@ -2,13 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="./jobCalendar.css"/>
     <title>Title</title>
 </head>
 <body>
+<div class="globalNotification_view">
+    <h3 id="globalNotification_headline_h3"></h3>
+    <span id="globalNotification_displayText_span"></span>
+</div>
 test123
-<script>
-    //var WS_URL = 'ws://127.0.0.1:8080/jobCalendar/wsEndpoint';
-    //ideaWatcher.core.WebSocketConnector.connectToServer(WS_URL);
-</script>
+<script src="js/namespaces.js"></script>
+<script src="js/model.js"></script>
+<script src="js/GlobalNotification.js"></script>
+<script src="js/WebSocketConnector.js"></script>
+<script src="js/jobCalendar.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (function () {
+jobCalendar.core.WebSocketConnector = jobCalendar.core.WebSocketConnector || (function () {
 
         //region lokale Variablen
         var webSocket = null;
@@ -8,8 +8,6 @@ ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (fu
             userId: ''
         };
         //endregion
-
-
 
         //region Neue WebSocket-Verbindung einrichten
 
@@ -30,36 +28,34 @@ ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (fu
                 console.log('WebSocket-Verbindung erfolgreich hergestellt!');
                 // callbackFunction(true);
                 isConnected = true;
-                pubWebSocketConnectionOpen();  //Nachricht bekannt geben
+                callbackFunction();  //Nachricht bekannt geben
             };
 
             // callback function wenn eine Nachricht reinkommt
             webSocket.onmessage = function (event) {
 
-                var language = ideaWatcher.core.Localizer.getLanguage();
                 try {
                     var serverMessage = JSON.parse(event.data);
                 } catch (error) {
                     console.log('Fehler beim Parsen der JSON-Daten vom' +
                         ' Server!\nFehlermeldung: ' + error);
                     console.log('Nachricht: ' + event.data);
-                    ideaWatcher.controller.GlobalNotification.showNotification(
-                        ideaWatcher.model.GlobalNotificationType.ERROR,
-                        ideaWatcher.core.Localizer.WebSocketConnector[language]
-                            .errorMessage.headline,
-                        ideaWatcher.core.Localizer.WebSocketConnector[language]
-                            .errorMessage.noValidServerResponse, 5000);
+                    jobCalendar.controller.GlobalNotification.showNotification(
+                        jobCalendar.model.GlobalNotificationType.ERROR,
+                        'Server-Verbindung',
+                        'Die Antwort des Servers ist nicht gültig. ' +
+                        ' Bitte versuchen Sie es erneut oder fragen den Administrator der' +
+                        ' Webseite.', 5000);
                 }
 
                 // Falls eine Fehlermeldung wegen ungültiger
                 // Token-Validierung zurückkommt, dann diese ausgeben:
                 if (serverMessage.errorMessage === 'token_not_valid') {
-                    ideaWatcher.controller.GlobalNotification.showNotification(
-                        ideaWatcher.model.GlobalNotificationType.ERROR,
-                        ideaWatcher.core.Localizer.WebSocketConnector[language]
-                            .errorMessage.headline,
-                        ideaWatcher.core.Localizer.WebSocketConnector[language]
-                            .errorMessage.token_not_valid, 5000);
+                    jobCalendar.controller.GlobalNotification.showNotification(
+                        jobCalendar.model.GlobalNotificationType.ERROR,
+                        'Server-Verbindung',
+                        'Ihre Benutzersitzungsdaten sind nicht valide.' +
+                        ' Bitte versuchen Sie es erneut.', 5000);
                 }
 
                 //region Wenn UserSession-Antwort, dann Token und UserID
@@ -74,8 +70,8 @@ ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (fu
 
                 console.log('Servernachricht: ' + serverMessage);
 
-                // Nachricht veröffentlichen
-                ideaWatcher.core.MessageBroker.publish({
+                // Nachricht verarbeiten
+                jobCalendar.controller.MessageController.handleMessage({
                     topic: serverMessage.destination,
                     exObject: serverMessage
                 });
@@ -84,13 +80,12 @@ ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (fu
             webSocket.onerror = function (error) {
                 console.log('Fehler! Verbindungsaufbau schief gegangen!');
                 console.log('Fehlermeldung: ' + error);
-                var language = ideaWatcher.core.Localizer.getLanguage();
-                ideaWatcher.controller.GlobalNotification.showNotification(
-                    ideaWatcher.model.GlobalNotificationType.ERROR,
-                    ideaWatcher.core.Localizer.WebSocketConnector[language]
-                        .errorMessage.headline,
-                    ideaWatcher.core.Localizer.WebSocketConnector[language]
-                        .errorMessage.connectionInterrupted, 5000);
+                jobCalendar.controller.GlobalNotification.showNotification(
+                    jobCalendar.model.GlobalNotificationType.ERROR,
+                    'Server-Verbindung',
+                    'Die Verbindung zum Server wurde unterbrochen.' +
+                    ' Bitte versuchen Sie es erneut oder fragen den Administrator der' +
+                    ' Webseite.', 5000);
                 isConnected = false;
             };
             webSocket.onclose = function (event) {
@@ -108,13 +103,13 @@ ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (fu
                 }
                 var errorText = 'Grund für Verbindungstrennung: ' + event.code + ' --- ' + reason;
                 console.log(errorText);
-                var language = ideaWatcher.core.Localizer.getLanguage();
-                ideaWatcher.controller.GlobalNotification.showNotification(
-                    ideaWatcher.model.GlobalNotificationType.ERROR,
-                    ideaWatcher.core.Localizer.WebSocketConnector[language]
-                        .errorMessage.headline,
-                    ideaWatcher.core.Localizer.WebSocketConnector[language]
-                        .errorMessage.connectionClosed, 5000);
+
+                jobCalendar.controller.GlobalNotification.showNotification(
+                    jobCalendar.model.GlobalNotificationType.ERROR,
+                    'Server-Verbindung',
+                    'Die Verbindung zum Server wurde geschlossen.' +
+                    ' Bitte versuchen Sie es erneut oder fragen den Administrator der' +
+                    ' Webseite.', 5000);
                 // besser als Objekt schreiben um nicht zu verwirren?
                 // callbackfunction(false, {
                 //     code: event.code,
@@ -160,16 +155,6 @@ ideaWatcher.core.WebSocketConnector = ideaWatcher.core.WebSocketConnector || (fu
         }
         //endregion
 
-        //region Nachricht, dass WebSocketVerbindung offe ist, raus geben:
-        function pubWebSocketConnectionOpen() {
-
-            var evObject = {
-                topic: 'SWebSocket/connectionOpen',
-                exObject: null
-            };
-            ideaWatcher.core.MessageBroker.publish(evObject);
-        }
-        //endregion
 
         return {
             connectToServer: pubConnect,
