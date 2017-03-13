@@ -17,6 +17,7 @@ public class lifeCycle implements ServletContextListener{
     {
         //shutdown logic
         // Hallo Roland
+        // Hallo André
 
     }
 
