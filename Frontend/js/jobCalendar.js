@@ -40,7 +40,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             // Hier kommt die Logik zum Auswerten der Nachrichten rein
             switch(destination) {
                 case "SCalendar/testResponse":
-
+                    // hier sollte man dann eine Methode aufrufen, am besten aus einer anderen Klasse
                     window.alert(data.eineLustigeAntwort);
                     break;
                 default:
