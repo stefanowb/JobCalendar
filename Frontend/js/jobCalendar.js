@@ -11,7 +11,7 @@ function webSocketConnectionEstablished(obj)
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
-        exchangeObject.destination = 'SCalendar/testRequest';
+        exchangeObject.destination = 'SCalendar/testSQLRequest';
         var exchangeData = {
             beliebesFeld: "beliebiger Wert"
         };
@@ -21,8 +21,8 @@ function webSocketConnectionEstablished(obj)
     } else {
         //TODO: Was soll bei einer nicht bestehenden Verbindung passieren??
     }
-
 }
+
 
 jobCalendar.controller.MessageController = jobCalendar.controller.MessageController  || (function () {
 
@@ -40,12 +40,24 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             // Hier kommt die Logik zum Auswerten der Nachrichten rein
             switch(destination) {
                 case "SCalendar/testResponse":
-                    // hier sollte man dann eine Methode aufrufen, am besten aus einer anderen Klasse
-                    window.alert(data.eineLustigeAntwort);
+                    // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
+                    testFunktion(data);
+                    break;
+                case "SCalendar/testSQLResponse":
+                    // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
+                    testSQLFunktion(data);
                     break;
                 default:
                     console.log("Unbekannte WebSocket Nachricht eingegangen ...")
             }
+        }
+
+        function testFunktion(messageData) {
+            window.alert(messageData.eineLustigeAntwort);
+        }
+
+        function testSQLFunktion(messageData) {
+            window.alert(messageData.sqlResult);
         }
 
         return {

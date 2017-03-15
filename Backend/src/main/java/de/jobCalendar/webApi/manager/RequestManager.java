@@ -3,6 +3,8 @@ package main.java.de.jobCalendar.webApi.manager;
 import main.java.de.jobCalendar.webApi.common.Response;
 import org.json.JSONObject;
 
+import java.sql.*;
+
 public class RequestManager {
 
     /**
@@ -46,6 +48,9 @@ public class RequestManager {
             case "SCalendar/testRequest":
                 response = getTestResponse(requestData);
                 break;
+            case "SCalendar/testSQLRequest":
+                response = getTestSQLResponse(requestData);
+                break;
             default:
                 response = new Response();
                 response.setResult("error");
@@ -67,6 +72,62 @@ public class RequestManager {
         JSONObject dataObject = new JSONObject();
         dataObject.put("eineLustigeAntwort", "Hey, dies ist eine Antwort auf eine Websocket Nachricht. Es funzt. Wuhuuuu!");
         response.setData(dataObject);
+
+        return response;
+    }
+
+    public Response getTestSQLResponse(JSONObject requestData) throws Exception{
+        Response response = new Response();
+        response.setDestination("SCalendar/testSQLResponse");
+
+        String userName = "sa";
+        String password = "SQLPasswort";
+        String url = "jdbc:sqlserver://Stefan-PC\\MSSQLSERVER;databaseName=Northwind";
+
+        try
+        {
+            Class.forName( "com.microsoft.sqlserver.jdbc.SQLServerDriver" );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            response.setResult("error");
+            response.setErrorMessage("SQL Treiber nicht vorhanden!");
+        }
+
+        Connection con = null;
+
+        try
+        {
+            con = DriverManager.getConnection(url, userName, password);
+            Statement stmt = con.createStatement();
+
+            ResultSet rs = stmt.executeQuery( "SELECT * FROM Customers" );
+
+            String resultString = "";
+
+            while ( rs.next() ){
+                resultString += rs.getString("CompanyName") + "\n";
+            }
+
+            response.setResult("success");
+            JSONObject dataObject = new JSONObject();
+            dataObject.put("sqlResult", resultString);
+            response.setData(dataObject);
+
+            rs.close();
+            stmt.close();
+        }
+        catch ( SQLException e )
+        {
+            e.printStackTrace();
+            response.setResult("error");
+            response.setErrorMessage("Fehler bei der SQL Abfrage");
+        }
+        finally
+        {
+            if ( con != null )
+                try { con.close(); } catch ( SQLException e ) { e.printStackTrace(); }
+        }
 
         return response;
     }

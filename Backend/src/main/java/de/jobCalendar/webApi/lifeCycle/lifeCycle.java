@@ -25,6 +25,7 @@ public class lifeCycle implements ServletContextListener{
     public void contextInitialized(ServletContextEvent arg0)
     {
         //startup logic
+
         try {
             InstanceManager.initialize();
         } catch (Exception e) {
