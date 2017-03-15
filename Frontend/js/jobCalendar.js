@@ -8,11 +8,14 @@ function webSocketConnectionEstablished(obj)
 {
     console.log('Hier könnte man jetzt nach dem Aufbau der Verbindung etwas auslösen');
 
-    if (ideaWatcher.core.WebSocketConnector.isConnected()) {
+    if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
         exchangeObject.destination = 'SCalendar/testRequest';
-        exchangeObject.data = null;
+        var exchangeData = {
+            beliebesFeld: "beliebiger Wert"
+        };
+        exchangeObject.data = exchangeData;
 
         jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
     } else {
@@ -23,12 +26,26 @@ function webSocketConnectionEstablished(obj)
 
 jobCalendar.controller.MessageController = jobCalendar.controller.MessageController  || (function () {
 
-        function pubHandleMessage(topic, exObject) {
+        function pubHandleMessage(serverMessage) {
+
+            var destination = serverMessage.destination;
+            var result = serverMessage.result;
+            var data = serverMessage.data;
+
             console.log('WebSocket Nachricht eingegangen!');
-            console.log('Topic: ' + topic);
-            console.log(exObject);
+            console.log('destination: ' + destination);
+            console.log('result: ' + result);
+            console.log('data: ' + data);
 
             // Hier kommt die Logik zum Auswerten der Nachrichten rein
+            switch(destination) {
+                case "SCalendar/testResponse":
+
+                    window.alert(data.eineLustigeAntwort);
+                    break;
+                default:
+                    console.log("Unbekannte WebSocket Nachricht eingegangen ...")
+            }
         }
 
         return {

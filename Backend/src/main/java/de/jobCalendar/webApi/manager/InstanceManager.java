@@ -13,7 +13,6 @@ public class InstanceManager {
 
     public static void initialize() throws Exception {
 
-        System.out.println("teeeeeeeest");
         requestManager = new RequestManager();
     }
 }

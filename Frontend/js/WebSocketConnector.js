@@ -48,33 +48,10 @@ jobCalendar.core.WebSocketConnector = jobCalendar.core.WebSocketConnector || (fu
                         ' Webseite.', 5000);
                 }
 
-                // Falls eine Fehlermeldung wegen ungültiger
-                // Token-Validierung zurückkommt, dann diese ausgeben:
-                if (serverMessage.errorMessage === 'token_not_valid') {
-                    jobCalendar.controller.GlobalNotification.showNotification(
-                        jobCalendar.model.GlobalNotificationType.ERROR,
-                        'Server-Verbindung',
-                        'Ihre Benutzersitzungsdaten sind nicht valide.' +
-                        ' Bitte versuchen Sie es erneut.', 5000);
-                }
-
-                //region Wenn UserSession-Antwort, dann Token und UserID
-                // speichern:
-
-                if (serverMessage.destination.startsWith('SLogin')) {
-                    standardHeader.token = serverMessage.token;
-                    standardHeader.userId = serverMessage.userId;
-                }
-
-                //endregion
-
                 console.log('Servernachricht: ' + serverMessage);
 
                 // Nachricht verarbeiten
-                jobCalendar.controller.MessageController.handleMessage({
-                    topic: serverMessage.destination,
-                    exObject: serverMessage
-                });
+                jobCalendar.controller.MessageController.handleMessage(serverMessage);
             };
 
             webSocket.onerror = function (error) {
