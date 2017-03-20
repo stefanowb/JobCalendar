@@ -3,6 +3,12 @@ package main.java.de.jobCalendar.webApi.manager;
 import main.java.de.jobCalendar.webApi.common.Response;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.*;
 
 public class RequestManager {
@@ -51,6 +57,9 @@ public class RequestManager {
             case "SCalendar/testSQLRequest":
                 response = getTestSQLResponse(requestData);
                 break;
+            case "SCalendar/testScheduledTasksRequest":
+                response = getSchduledTasksResponse(requestData);
+                break;
             default:
                 response = new Response();
                 response.setResult("error");
@@ -72,6 +81,64 @@ public class RequestManager {
         JSONObject dataObject = new JSONObject();
         dataObject.put("eineLustigeAntwort", "Hey, dies ist eine Antwort auf eine Websocket Nachricht. Es funzt. Wuhuuuu!");
         response.setData(dataObject);
+
+        return response;
+    }
+
+    public  Response getSchduledTasksResponse(JSONObject requestData) throws Exception{
+        Response response = new Response();
+        response.setDestination("SCalendar/testScheduledTasksResponse");
+
+        String serverName = requestData.getString("serverName");
+        String targetURL = String.format("http://%s:9876/taskschedulermonitor/", serverName);
+        String urlParameters = "getScheduledTasks";
+
+        HttpURLConnection connection = null;
+
+        try {
+            //Create connection
+            URL url = new URL(targetURL);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-Type",
+                    "application/x-www-form-urlencoded");
+
+            connection.setRequestProperty("Content-Length",
+                    Integer.toString(urlParameters.getBytes().length));
+            connection.setRequestProperty("Content-Language", "en-US");
+
+            connection.setUseCaches(false);
+            connection.setDoOutput(true);
+
+            //Send request
+            DataOutputStream wr = new DataOutputStream (
+                    connection.getOutputStream());
+            wr.writeBytes(urlParameters);
+            wr.close();
+
+            //Get Response
+            InputStream is = connection.getInputStream();
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+            StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
+            String line;
+            while ((line = rd.readLine()) != null) {
+                httpResponse.append(line);
+                httpResponse.append('\r');
+            }
+            rd.close();
+
+            JSONObject dataObject = new JSONObject();
+            dataObject.put("httpResponse", httpResponse.toString());
+            response.setData(dataObject);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
 
         return response;
     }

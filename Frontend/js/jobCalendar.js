@@ -13,7 +13,7 @@ function webSocketConnectionEstablished(obj)
         var exchangeObject = Object.create(jobCalendar.model.Request);
         exchangeObject.destination = 'SCalendar/testSQLRequest';
         var exchangeData = {
-            beliebesFeld: "beliebiger Wert"
+            serverName: "STEFAN-PC"
         };
         exchangeObject.data = exchangeData;
 
@@ -47,6 +47,10 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
                     testSQLFunktion(data);
                     break;
+                case "SCalendar/testScheduledTasksResponse":
+                    // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
+                    testScheduledTasksFunktion(data);
+                    break;
                 default:
                     console.log("Unbekannte WebSocket Nachricht eingegangen ...")
             }
@@ -58,6 +62,10 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
         function testSQLFunktion(messageData) {
             window.alert(messageData.sqlResult);
+        }
+
+        function testScheduledTasksFunktion(messageData) {
+            window.alert(messageData.httpResponse);
         }
 
         return {
