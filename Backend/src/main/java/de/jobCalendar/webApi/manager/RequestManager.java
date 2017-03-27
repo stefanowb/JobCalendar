@@ -3,10 +3,7 @@ package main.java.de.jobCalendar.webApi.manager;
 import main.java.de.jobCalendar.webApi.common.Response;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
@@ -57,8 +54,8 @@ public class RequestManager {
             case "SCalendar/testSQLRequest":
                 response = getTestSQLResponse(requestData);
                 break;
-            case "SCalendar/testScheduledTasksRequest":
-                response = getSchduledTasksResponse(requestData);
+            case "SCalendar/scheduledTasksRequest":
+                response = getScheduledTasksResponse(requestData);
                 break;
             default:
                 response = new Response();
@@ -85,13 +82,14 @@ public class RequestManager {
         return response;
     }
 
-    public  Response getSchduledTasksResponse(JSONObject requestData) throws Exception{
+    public  Response getScheduledTasksResponse(JSONObject requestData) throws Exception{
         Response response = new Response();
-        response.setDestination("SCalendar/testScheduledTasksResponse");
+        JSONObject responseDataObject = new JSONObject();
+        response.setDestination("SCalendar/scheduledTasksResponse");
 
         String serverName = requestData.getString("serverName");
-        String targetURL = String.format("http://%s:9876/taskschedulermonitor/", serverName);
-        String urlParameters = "getScheduledTasks";
+        responseDataObject.put("serverName", serverName);
+        String targetURL = String.format("http://%s:9876/taskschedulermonitor/scheduled_tasks", serverName);
 
         HttpURLConnection connection = null;
 
@@ -100,46 +98,55 @@ public class RequestManager {
             URL url = new URL(targetURL);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("Content-Type",
-                    "application/x-www-form-urlencoded");
-
-            connection.setRequestProperty("Content-Length",
-                    Integer.toString(urlParameters.getBytes().length));
-            connection.setRequestProperty("Content-Language", "en-US");
-
+            connection.setConnectTimeout(5000);     // Connection Timeout (5 Sekunden)
+            connection.setReadTimeout(5000);        // Socket Timeout (5 Sekunden)
             connection.setUseCaches(false);
-            connection.setDoOutput(true);
-
-            //Send request
-            DataOutputStream wr = new DataOutputStream (
-                    connection.getOutputStream());
-            wr.writeBytes(urlParameters);
-            wr.close();
 
             //Get Response
-            InputStream is = connection.getInputStream();
-            BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-            StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
-            String line;
-            while ((line = rd.readLine()) != null) {
-                httpResponse.append(line);
-                httpResponse.append('\r');
-            }
-            rd.close();
+            int responseCode = connection.getResponseCode();
+            // HTTP-Code 200 = OK
+            if (responseCode == 200){
+                InputStream is = connection.getInputStream();
 
-            JSONObject dataObject = new JSONObject();
-            dataObject.put("httpResponse", httpResponse.toString());
-            response.setData(dataObject);
+                BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
+                String line;
+                while ((line = rd.readLine()) != null) {
+                    httpResponse.append(line);
+                    httpResponse.append('\r');
+                }
+                rd.close();
+
+                response.setResult("success");
+                responseDataObject.put("httpResponse", httpResponse.toString());
+            } else {
+                response.setResult("error");
+                responseDataObject.put("errorMessage", "HTTP-Code: " + responseCode);
+            }
+
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
+            response.setResult("error");
+            responseDataObject.put("errorMessage", "SocketTimeout");
+
+        } catch (java.net.UnknownHostException e) {
+            e.printStackTrace();
+            response.setResult("error");
+            responseDataObject.put("errorMessage", "UnknownHost");
+
 
         } catch (Exception e) {
             e.printStackTrace();
-            return null;
+            response.setResult("error");
+            responseDataObject.put("errorMessage", e.getMessage());
+
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
 
+        response.setData(responseDataObject);
         return response;
     }
 

@@ -11,9 +11,9 @@ function webSocketConnectionEstablished(obj)
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
-        exchangeObject.destination = 'SCalendar/testSQLRequest';
+        exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
         var exchangeData = {
-            serverName: "STEFAN-PC"
+            serverName: "localhost"
         };
         exchangeObject.data = exchangeData;
 
@@ -39,20 +39,20 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
             // Hier kommt die Logik zum Auswerten der Nachrichten rein
             switch(destination) {
-                case "SCalendar/testResponse":
+                case 'SCalendar/testResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
                     testFunktion(data);
                     break;
-                case "SCalendar/testSQLResponse":
+                case 'SCalendar/testSQLResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
                     testSQLFunktion(data);
                     break;
-                case "SCalendar/testScheduledTasksResponse":
+                case 'SCalendar/scheduledTasksResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
-                    testScheduledTasksFunktion(data);
+                    ScheduledTasksFunktion(data, result);
                     break;
                 default:
-                    console.log("Unbekannte WebSocket Nachricht eingegangen ...")
+                    console.log('Unbekannte WebSocket Nachricht eingegangen ...')
             }
         }
 
@@ -64,8 +64,34 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             window.alert(messageData.sqlResult);
         }
 
-        function testScheduledTasksFunktion(messageData) {
-            window.alert(messageData.httpResponse);
+        function ScheduledTasksFunktion(messageData, result) {
+            if (result == 'success'){
+                window.alert(messageData.httpResponse);
+            } else {
+
+                var outputHeader = '';
+                var outputMessage = '';
+
+                switch (messageData.errorMessage){
+                    case 'SocketTimeout':
+                        outputHeader = 'ScheduledTasks - SocketTimeout';
+                        outputMessage = 'Der Server ' + messageData.serverName + ' konnte nicht erreicht werden.';
+                        break;
+                    case 'UnknownHost':
+                        outputHeader = 'ScheduledTasks - Unbekannter Host';
+                        outputMessage = 'Der Server mit dem Namen ' + messageData.serverName + ' existiert nicht.';
+                        break;
+                    default:
+                        outputHeader = 'ScheduledTasks - Unbekannter Fehler';
+                        outputMessage = 'Bei der Abfrage der geplanten Tasks des Servers ' + messageData.serverName +
+                            ' ist ein unbekannter Fehler aufgetreten. Fehlermeldung: ' + messageData.errorMessage;
+                        break;
+                }
+
+                jobCalendar.controller.GlobalNotification.showNotification(
+                    jobCalendar.model.GlobalNotificationType.ERROR,
+                    outputHeader, outputMessage, 5000);
+            }
         }
 
         return {
