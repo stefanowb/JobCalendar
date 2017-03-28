@@ -65,8 +65,27 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
         }
 
         function ScheduledTasksFunktion(messageData, result) {
+
             if (result == 'success'){
-                window.alert(messageData.httpResponse);
+                // window.alert(messageData.httpResponse);
+
+                $(document).ready(function() {
+                    const parsedArray = JSON.parse(messageData.httpResponse);
+                    $('#calendar').fullCalendar({
+                        header: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'month,agendaWeek,agendaDay,listWeek'
+                        },
+                        defaultDate: new Date(),
+                        editable: true,
+                        navLinks: true, // can click day/week names to navigate views
+                        eventLimit: true, // allow "more" link when too many events
+                        events: parsedArray
+                    });
+
+                });
+
             } else {
 
                 var outputHeader = '';
