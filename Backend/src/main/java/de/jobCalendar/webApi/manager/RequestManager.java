@@ -3,6 +3,9 @@ package main.java.de.jobCalendar.webApi.manager;
 import main.java.de.jobCalendar.webApi.common.Response;
 import org.json.JSONObject;
 
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.sql.*;
 
 public class RequestManager {
@@ -51,6 +54,9 @@ public class RequestManager {
             case "SCalendar/testSQLRequest":
                 response = getTestSQLResponse(requestData);
                 break;
+            case "SCalendar/scheduledTasksRequest":
+                response = getScheduledTasksResponse(requestData);
+                break;
             default:
                 response = new Response();
                 response.setResult("error");
@@ -73,6 +79,74 @@ public class RequestManager {
         dataObject.put("eineLustigeAntwort", "Hey, dies ist eine Antwort auf eine Websocket Nachricht. Es funzt. Wuhuuuu!");
         response.setData(dataObject);
 
+        return response;
+    }
+
+    public  Response getScheduledTasksResponse(JSONObject requestData) throws Exception{
+        Response response = new Response();
+        JSONObject responseDataObject = new JSONObject();
+        response.setDestination("SCalendar/scheduledTasksResponse");
+
+        String serverName = requestData.getString("serverName");
+        responseDataObject.put("serverName", serverName);
+        String targetURL = String.format("http://%s:9876/taskschedulermonitor/scheduled_tasks", serverName);
+
+        HttpURLConnection connection = null;
+
+        try {
+            //Create connection
+            URL url = new URL(targetURL);
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);     // Connection Timeout (5 Sekunden)
+            connection.setReadTimeout(5000);        // Socket Timeout (5 Sekunden)
+            connection.setUseCaches(false);
+
+            //Get Response
+            int responseCode = connection.getResponseCode();
+            // HTTP-Code 200 = OK
+            if (responseCode == 200){
+                InputStream is = connection.getInputStream();
+
+                BufferedReader rd = new BufferedReader(new InputStreamReader(is));
+                StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
+                String line;
+                while ((line = rd.readLine()) != null) {
+                    httpResponse.append(line);
+                    httpResponse.append('\r');
+                }
+                rd.close();
+
+                response.setResult("success");
+                responseDataObject.put("httpResponse", httpResponse.toString());
+            } else {
+                response.setResult("error");
+                responseDataObject.put("errorMessage", "HTTP-Code: " + responseCode);
+            }
+
+        } catch (java.net.SocketTimeoutException e) {
+            e.printStackTrace();
+            response.setResult("error");
+            responseDataObject.put("errorMessage", "SocketTimeout");
+
+        } catch (java.net.UnknownHostException e) {
+            e.printStackTrace();
+            response.setResult("error");
+            responseDataObject.put("errorMessage", "UnknownHost");
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setResult("error");
+            responseDataObject.put("errorMessage", e.getMessage());
+
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+        response.setData(responseDataObject);
         return response;
     }
 

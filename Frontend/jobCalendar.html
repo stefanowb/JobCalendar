@@ -1,20 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="./jobCalendar.css"/>
     <title>Title</title>
+    <meta charset='utf-8' />
+    <link rel="stylesheet" href="css/jobCalendar.css"/>
+    <link href='css/fullcalendar.min.css' rel='stylesheet' />
+    <link href='css/fullcalendar.print.min.css' rel='stylesheet' media='print' />
+    <script src='lib/moment.min.js'></script>
+    <script src='lib/jquery.min.js'></script>
+    <script src='js/fullcalendar.min.js'></script>
+
+    <style>
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+            font-size: 14px;
+        }
+
+        #calendar {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 10px;
+        }
+
+    </style>
 </head>
 <body>
-<div class="globalNotification_view">
-    <h3 id="globalNotification_headline_h3"></h3>
-    <span id="globalNotification_displayText_span"></span>
-</div>
-test123
-<script src="js/namespaces.js"></script>
-<script src="js/model.js"></script>
-<script src="js/GlobalNotification.js"></script>
-<script src="js/WebSocketConnector.js"></script>
-<script src="js/jobCalendar.js"></script>
+    <div class="globalNotification_view">
+        <h3 id="globalNotification_headline_h3"></h3>
+        <span id="globalNotification_displayText_span"></span>
+    </div>
+
+    <div id='calendar'></div>
+
+    <script src="js/namespaces.js"></script>
+    <script src="js/model.js"></script>
+    <script src="js/GlobalNotification.js"></script>
+    <script src="js/WebSocketConnector.js"></script>
+    <script src="js/jobCalendar.js"></script>
+
 </body>
 </html>
