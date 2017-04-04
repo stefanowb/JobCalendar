@@ -10,27 +10,56 @@
     <script src='lib/jquery.min.js'></script>
     <script src='js/fullcalendar.min.js'></script>
 
-    <style>
-
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
-            font-size: 14px;
-        }
-
-        #calendar {
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 0 10px;
-        }
-
-    </style>
 </head>
+
+<style>
+
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+        font-size: 14px;
+    }
+
+    #calendar {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 10px;
+    }
+
+    h1 {
+        text-align: center;
+    }
+
+    label {
+        font-size: 14px;
+        font-family: "Lucida Grande",Helvetica,Arial,Verdana,sans-serif;
+        font-weight: bold;
+    }
+
+    #server {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 10px;
+    }
+
+    #mySelectID {
+        border-radius: 5px 5px;
+    }
+
+</style>
+
 <body>
     <div class="globalNotification_view">
         <h3 id="globalNotification_headline_h3"></h3>
         <span id="globalNotification_displayText_span"></span>
+    </div>
+
+    <h1>Job Calendar</h1>
+
+    <div id="server">
+        <label>Change Server: </label>
+        <select id="mySelectID" name="select"></select>
     </div>
 
     <div id='calendar'></div>

@@ -3,10 +3,19 @@ jobCalendar.view.GlobalNotification.initialize();
 var WS_URL = 'ws://127.0.0.1:8080/jobCalendar/wsEndpoint';
 jobCalendar.core.WebSocketConnector.connectToServer(WS_URL, webSocketConnectionEstablished);
 
-
 function webSocketConnectionEstablished(obj)
 {
     console.log('Hier könnte man jetzt nach dem Aufbau der Verbindung etwas auslösen');
+
+    var s = ('[{"server":"Stefans Server", "id":"1", "type":"task"}, {"server":"Rolands Server", "id":"2", "type":"sql"}]');
+
+    var jsonData = $.parseJSON(s);
+
+    var $select = $('#mySelectID');
+    $(jsonData).each(function (index, value) {
+        var $option = $("<option/>").attr("value", value.id).text(value.server);
+        $select.append($option);
+    });
 
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
