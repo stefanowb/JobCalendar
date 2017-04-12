@@ -43,7 +43,16 @@
         padding: 0 10px;
     }
 
-    #mySelectID {
+    #mySelect {
+        border-radius: 5px 5px;
+    }
+
+    #myInput {
+        border-radius: 5px 5px;
+        width: 30px;
+    }
+
+    button {
         border-radius: 5px 5px;
     }
 
@@ -59,7 +68,17 @@
 
     <div id="server">
         <label>Change Server: </label>
-        <select id="mySelectID" name="select"></select>
+        <select id="mySelect" name="select">
+            <option name='server' value="" id="0"></option>
+            <option name='server' value="Stefan" id="1">Stefan</option>
+            <option name='server' value="Roland" id="2">Roland</option>
+        </select>
+        <button onclick="changeServer()">Change Server</button>
+
+        <label>Time Range: </label>
+        <input id="myInput" type="text">
+        <button onclick="changeTRange()">Change Time Range</button>
+        <label>in Days</label>
     </div>
 
     <div id='calendar'></div>

@@ -57,6 +57,9 @@ public class RequestManager {
             case "SCalendar/scheduledTasksRequest":
                 response = getScheduledTasksResponse(requestData);
                 break;
+            case "SCalendar/btnClick":
+                response = getBtnResponse(requestData);
+                break;
             default:
                 response = new Response();
                 response.setResult("error");
@@ -68,6 +71,11 @@ public class RequestManager {
         return responseString;
     }
 
+    public Response getBtnResponse(JSONObject requestData){
+        Response response = new Response();
+        System.out.println("TEEEEst");
+        return response;
+    }
 
     public Response getTestResponse(JSONObject requestData){
 
