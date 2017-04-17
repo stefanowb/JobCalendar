@@ -1,12 +1,16 @@
 package main.java.de.jobCalendar.webApi.manager;
 
 import main.java.de.jobCalendar.webApi.common.Response;
+import main.java.de.jobCalendar.webApi.scheduleConverter.*;
+import main.java.de.jobCalendar.webApi.sqlServerQuery.*;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class RequestManager {
 
@@ -51,8 +55,8 @@ public class RequestManager {
             case "SCalendar/testRequest":
                 response = getTestResponse(requestData);
                 break;
-            case "SCalendar/testSQLRequest":
-                response = getTestSQLResponse(requestData);
+            case "SCalendar/SQLRequest":
+                response = getSQLResponse(requestData);
                 break;
             case "SCalendar/scheduledTasksRequest":
                 response = getScheduledTasksResponse(requestData);
@@ -158,13 +162,15 @@ public class RequestManager {
         return response;
     }
 
-    public Response getTestSQLResponse(JSONObject requestData) throws Exception{
+    public Response getSQLResponse(JSONObject requestData) throws Exception{
         Response response = new Response();
-        response.setDestination("SCalendar/testSQLResponse");
+        response.setDestination("SCalendar/SQLResponse");
 
-        String userName = "sa";
-        String password = "SQLPasswort";
-        String url = "jdbc:sqlserver://Stefan-PC\\MSSQLSERVER;databaseName=Northwind";
+        String serverName = requestData.getString("serverName");
+        String userName = requestData.getString("userName");
+        String password = requestData.getString("password");
+        int fromDate = requestData.getInt("fromDate");
+        int toDate = requestData.getInt("toDate");
 
         try
         {
@@ -173,42 +179,42 @@ public class RequestManager {
         catch ( ClassNotFoundException e )
         {
             response.setResult("error");
-            response.setErrorMessage("SQL Treiber nicht vorhanden!");
+            response.setErrorMessage("MissingDriver");
+            return response;
         }
-
-        Connection con = null;
 
         try
         {
-            con = DriverManager.getConnection(url, userName, password);
-            Statement stmt = con.createStatement();
+            CalendarGenerator cg = new CalendarGenerator();
+            ArrayList<ScheduleCalendar> schedulCalList = new ArrayList<>();
 
-            ResultSet rs = stmt.executeQuery( "SELECT * FROM Customers" );
+            SQLserverConnector sqlServerConnector = new SQLserverConnector(serverName, userName, password);
+            ArrayList<SQLschedule> scheduleList = cg.getSQLscheduleValues(sqlServerConnector);
+            schedulCalList = cg.getScheduleCalendar(scheduleList, fromDate, toDate);
 
-            String resultString = "";
+            JSONArray calenderEntriesArray = new JSONArray();
+            for(ScheduleCalendar sca : schedulCalList){
+                JSONObject calenderEntryObject = new JSONObject();
 
-            while ( rs.next() ){
-                resultString += rs.getString("CompanyName") + "\n";
+                calenderEntryObject.put("id", sca.getId());
+                calenderEntryObject.put("title", sca.getTitle());
+                calenderEntryObject.put("start", sca.getStart());
+                calenderEntryObject.put("end", sca.getEnd());
+
+                calenderEntriesArray.put(calenderEntryObject);
             }
 
             response.setResult("success");
             JSONObject dataObject = new JSONObject();
-            dataObject.put("sqlResult", resultString);
+            dataObject.put("sqlResult", calenderEntriesArray);
             response.setData(dataObject);
 
-            rs.close();
-            stmt.close();
         }
         catch ( SQLException e )
         {
             e.printStackTrace();
             response.setResult("error");
-            response.setErrorMessage("Fehler bei der SQL Abfrage");
-        }
-        finally
-        {
-            if ( con != null )
-                try { con.close(); } catch ( SQLException e ) { e.printStackTrace(); }
+            response.setErrorMessage(e.getMessage());
         }
 
         return response;

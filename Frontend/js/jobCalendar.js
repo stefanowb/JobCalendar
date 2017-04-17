@@ -11,11 +11,15 @@ function webSocketConnectionEstablished(obj)
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
-        exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
-        // exchangeObject.destination = 'SCalendar/testRequest';
+        // exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
+        exchangeObject.destination = 'SCalendar/SQLRequest';
 
         var exchangeData = {
-            serverName: "localhost"
+            serverName: "localhost",
+            userName: "sa",
+            password: "SQLPasswort",
+            fromDate: 20170418,
+            toDate: 20170425
         };
 
         exchangeObject.data = exchangeData;
@@ -44,6 +48,33 @@ function changeTRange() {
     window.alert(strUser);
 }
 
+function ShowCalenderEventsArrayInCalender(calenderEventsArray, doParse) {
+    $(document).ready(function() {
+
+        var parsedArray;
+
+        if (doParse){
+            parsedArray = JSON.parse(calenderEventsArray);
+        } else {
+            parsedArray = calenderEventsArray;
+        }
+
+        $('#calendar').fullCalendar({
+            header: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'month,agendaWeek,agendaDay,listWeek'
+            },
+            defaultDate: new Date(),
+            editable: true,
+            navLinks: true, // can click day/week names to navigate views
+            eventLimit: true, // allow "more" link when too many events
+            events: parsedArray
+        });
+
+    });
+}
+
 jobCalendar.controller.MessageController = jobCalendar.controller.MessageController  || (function () {
 
         function pubHandleMessage(serverMessage) {
@@ -59,13 +90,9 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
             // Hier kommt die Logik zum Auswerten der Nachrichten rein
             switch(destination) {
-                case 'SCalendar/testResponse':
+                case 'SCalendar/SQLResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
-                    testFunktion(data);
-                    break;
-                case 'SCalendar/testSQLResponse':
-                    // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
-                    testSQLFunktion(data);
+                    SQLFunktion(data, result);
                     break;
                 case 'SCalendar/scheduledTasksResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
@@ -76,35 +103,38 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             }
         }
 
-        function testFunktion(messageData) {
-            window.alert(messageData.eineLustigeAntwort);
-        }
+        function SQLFunktion(messageData, result) {
+            if (result == 'success'){
+                ShowCalenderEventsArrayInCalender(messageData.sqlResult, false);
+                //window.alert(messageData.sqlResult);
+                //console.log(messageData.sqlResult);
+            } else {
 
-        function testSQLFunktion(messageData) {
-            window.alert(messageData.sqlResult);
+                var outputHeader = '';
+                var outputMessage = '';
+
+                switch (messageData.errorMessage){
+                    case 'MissingDriver':
+                        outputHeader = 'ScheduledTasks - MissingDriver';
+                        outputMessage = 'Der SQL-Server Treiber ist auf dem Web-Server nicht vorhanden.';
+                        break;
+                    default:
+                        outputHeader = 'SQLQuery - Abfrage Fehler';
+                        outputMessage = 'Bei der Abfrage der SQL-Tasks des Servers ' + messageData.serverName +
+                            ' ist ein Fehler aufgetreten. Fehlermeldung: ' + messageData.errorMessage;
+                        break;
+                }
+
+                jobCalendar.controller.GlobalNotification.showNotification(
+                    jobCalendar.model.GlobalNotificationType.ERROR,
+                    outputHeader, outputMessage, 5000);
+            }
         }
 
         function ScheduledTasksFunktion(messageData, result) {
 
             if (result == 'success'){
-                // window.alert(messageData.httpResponse);
-
-                $(document).ready(function() {
-                    const parsedArray = JSON.parse(messageData.httpResponse);
-                    $('#calendar').fullCalendar({
-                        header: {
-                            left: 'prev,next today',
-                            center: 'title',
-                            right: 'month,agendaWeek,agendaDay,listWeek'
-                        },
-                        defaultDate: new Date(),
-                        editable: true,
-                        navLinks: true, // can click day/week names to navigate views
-                        eventLimit: true, // allow "more" link when too many events
-                        events: parsedArray
-                    });
-
-                });
+                ShowCalenderEventsArrayInCalender(messageData.httpResponse, true);
 
             } else {
 
