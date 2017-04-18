@@ -3,76 +3,26 @@ jobCalendar.view.GlobalNotification.initialize();
 var WS_URL = 'ws://127.0.0.1:8080/jobCalendar/wsEndpoint';
 jobCalendar.core.WebSocketConnector.connectToServer(WS_URL, webSocketConnectionEstablished);
 
-function webSocketConnectionEstablished(obj)
-{
-    console.log('Hier könnte man jetzt nach dem Aufbau der Verbindung etwas auslösen');
-
-
+function webSocketConnectionEstablished(obj) {
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
+        exchangeObject.destination = 'SCalendar/server';
         // exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
-        exchangeObject.destination = 'SCalendar/SQLRequest';
+        // exchangeObject.destination = 'SCalendar/SQLRequest';
 
         var exchangeData = {
             serverName: "localhost",
-            userName: "sa",
-            password: "SQLPasswort",
-            fromDate: 20170418,
-            toDate: 20170425
+            // userName: "sa",
+            // password: "SQLPasswort",
+            // fromDate: 20170418,
+            // toDate: 20170425
         };
-
         exchangeObject.data = exchangeData;
-
-
-
         jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
     } else {
         //TODO: Was soll bei einer nicht bestehenden Verbindung passieren??
     }
-}
-
-function changeServer() {
-
-    var e = document.getElementById("mySelect");
-    var strUser = e.options[e.selectedIndex].text;
-
-    window.alert(strUser);
-}
-
-function changeTRange() {
-
-    var e = document.getElementById("myInput");
-    var strUser = e.value;
-
-    window.alert(strUser);
-}
-
-function ShowCalenderEventsArrayInCalender(calenderEventsArray, doParse) {
-    $(document).ready(function() {
-
-        var parsedArray;
-
-        if (doParse){
-            parsedArray = JSON.parse(calenderEventsArray);
-        } else {
-            parsedArray = calenderEventsArray;
-        }
-
-        $('#calendar').fullCalendar({
-            header: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'month,agendaWeek,agendaDay,listWeek'
-            },
-            defaultDate: new Date(),
-            editable: true,
-            navLinks: true, // can click day/week names to navigate views
-            eventLimit: true, // allow "more" link when too many events
-            events: parsedArray
-        });
-
-    });
 }
 
 jobCalendar.controller.MessageController = jobCalendar.controller.MessageController  || (function () {
@@ -90,6 +40,10 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
             // Hier kommt die Logik zum Auswerten der Nachrichten rein
             switch(destination) {
+                case 'SCalendar/serverResponse':
+                    // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
+                    setServerFunktion(data, result);
+                    break;
                 case 'SCalendar/SQLResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
                     SQLFunktion(data, result);
@@ -103,8 +57,60 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             }
         }
 
+        //setzt server mit DAten aus der INIT Datei
+        function setServerFunktion(messageData, result) {
+
+            var parsedArray = JSON.parse(messageData.httpResponse);
+
+            localStorage.setItem("initData",messageData.httpResponse);
+            localStorage.setItem("result",result);
+
+            var $select = $('#mySelect');
+            $.each(parsedArray, function(i, val){
+                $select.append($('<option />', { id: parsedArray[i].id, text: parsedArray[i].name }));
+            });
+
+            var calendarEvents = null;
+            showCalendar(calendarEvents, result);
+        }
+
+        //zeigt Calender leer oder mit Serverdaten
+        function showCalendar(calendarEvents, result) {
+            var parsedArray = null;
+
+            // if (result == 'success') {
+            //     // ShowCalenderEventsArrayInCalender(messageData.httpResponse, true);
+            // }
+
+            if(calendarEvents != null) {
+                //werden gesetzt um sie wieder löschen zu können
+                localStorage.setItem("calendarEvents", calendarEvents);
+
+                parsedArray = JSON.parse(calendarEvents);
+
+                $.each(parsedArray, function(i, val){
+                    $('#calendar').fullCalendar( 'renderEvent', parsedArray[i] );
+                });
+            }
+            else {
+                $(document).ready(function() {
+                    $('#calendar').fullCalendar({
+                        header: {
+                            left: 'prev,next today',
+                            center: 'title',
+                            right: 'month,agendaWeek,agendaDay,listWeek'
+                        },
+                        defaultDate: new Date(),
+                        editable: true,
+                        navLinks: true, // can click day/week names to navigate views
+                        eventLimit: true // allow "more" link when too many events
+                    });
+                });
+            }
+        }
+
         function SQLFunktion(messageData, result) {
-            if (result == 'success'){
+            if (result == 'success') {
                 ShowCalenderEventsArrayInCalender(messageData.sqlResult, false);
                 //window.alert(messageData.sqlResult);
                 //console.log(messageData.sqlResult);
@@ -113,7 +119,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                 var outputHeader = '';
                 var outputMessage = '';
 
-                switch (messageData.errorMessage){
+                switch (messageData.errorMessage) {
                     case 'MissingDriver':
                         outputHeader = 'ScheduledTasks - MissingDriver';
                         outputMessage = 'Der SQL-Server Treiber ist auf dem Web-Server nicht vorhanden.';
@@ -133,9 +139,11 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
         function ScheduledTasksFunktion(messageData, result) {
 
-            if (result == 'success'){
-                ShowCalenderEventsArrayInCalender(messageData.httpResponse, true);
+            console.log("hier"+result);
 
+            if (result == 'success'){
+                // window.alert(messageData.httpResponse);
+                showCalendar(messageData.httpResponse);
             } else {
 
                 var outputHeader = '';
@@ -170,4 +178,81 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
     })();
 
 
+function changeServer() {
 
+    var e = document.getElementById("mySelect");
+    var serverID = e.options[e.selectedIndex].id;
+
+    var calendarEvents = JSON.parse(localStorage.getItem("calendarEvents"));
+
+    if (calendarEvents != null){
+        $.each(calendarEvents, function(i, val){
+            $('#calendar').fullCalendar('removeEvents',calendarEvents[i].id);
+        });
+    }
+
+    console.log(calendarEvents);
+
+    if(serverID >= 0){
+
+        var initData = JSON.parse(localStorage.getItem("initData"));
+        var result = localStorage.getItem("result");
+
+        // Zentrale INIT Variablen
+
+        var serverName = initData[serverID].name;
+        var serverID = initData[serverID].id;
+        var serverTask = initData[serverID].task;
+        var serverSQL = initData[serverID].sql;
+
+        // HIER kommt dann die Auswertung was aufgerufen wird (Server Anmeldedaten)
+
+        var exchangeObject = Object.create(jobCalendar.model.Request);
+        var exchangeData = {
+            serverName: "localhost"
+        };
+
+        if(serverTask == "true"){
+            exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
+            exchangeObject.result = result;
+            exchangeObject.data = exchangeData;
+
+            jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
+        }
+    }
+}
+
+function changeTRange() {
+
+    var e = document.getElementById("myInput");
+    var timeRange = e.value;
+
+    console.log(timeRange);
+}
+
+function ShowCalenderEventsArrayInCalender(calenderEventsArray, doParse) {
+    $(document).ready(function() {
+
+        var parsedArray;
+
+        if (doParse){
+            parsedArray = JSON.parse(calenderEventsArray);
+        } else {
+            parsedArray = calenderEventsArray;
+        }
+
+        $('#calendar').fullCalendar({
+            header: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'month,agendaWeek,agendaDay,listWeek'
+            },
+            defaultDate: new Date(),
+            editable: true,
+            navLinks: true, // can click day/week names to navigate views
+            eventLimit: true, // allow "more" link when too many events
+            events: parsedArray
+        });
+
+    });
+}

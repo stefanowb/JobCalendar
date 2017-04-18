@@ -12,6 +12,16 @@ import java.net.URL;
 import java.sql.*;
 import java.util.ArrayList;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Objects;
+
 public class RequestManager {
 
     /**
@@ -61,8 +71,8 @@ public class RequestManager {
             case "SCalendar/scheduledTasksRequest":
                 response = getScheduledTasksResponse(requestData);
                 break;
-            case "SCalendar/btnClick":
-                response = getBtnResponse(requestData);
+            case "SCalendar/server":
+                response = getServer(requestData);
                 break;
             default:
                 response = new Response();
@@ -75,9 +85,47 @@ public class RequestManager {
         return responseString;
     }
 
-    public Response getBtnResponse(JSONObject requestData){
+    public Response getServer(JSONObject requestData) throws Exception{
         Response response = new Response();
-        System.out.println("TEEEEst");
+
+        response.setDestination("SCalendar/serverResponse");
+        response.setResult("success");
+
+        JSONObject dataObject = new JSONObject();
+
+        String datName = "C:/jobCalendar/init.txt";
+
+        File file = new File(datName);
+
+        if (!file.canRead() || !file.isFile())
+            System.exit(0);
+
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new FileReader(datName));
+            String zeile = null;
+
+            StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
+
+            while ((zeile = in.readLine()) != null) {
+                    httpResponse.append(zeile);
+                    httpResponse.append('\r');
+            }
+
+            dataObject.put("httpResponse", httpResponse.toString());
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (in != null)
+                try {
+                    in.close();
+                } catch (IOException e) {
+                }
+        }
+
+        response.setData(dataObject);
+
         return response;
     }
 
@@ -113,9 +161,10 @@ public class RequestManager {
             connection.setConnectTimeout(5000);     // Connection Timeout (5 Sekunden)
             connection.setReadTimeout(5000);        // Socket Timeout (5 Sekunden)
             connection.setUseCaches(false);
-
+            System.out.println("HIER: ");
             //Get Response
             int responseCode = connection.getResponseCode();
+            System.out.println("HIER: "+responseCode);
             // HTTP-Code 200 = OK
             if (responseCode == 200){
                 InputStream is = connection.getInputStream();
