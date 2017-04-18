@@ -161,10 +161,9 @@ public class RequestManager {
             connection.setConnectTimeout(5000);     // Connection Timeout (5 Sekunden)
             connection.setReadTimeout(5000);        // Socket Timeout (5 Sekunden)
             connection.setUseCaches(false);
-            System.out.println("HIER: ");
             //Get Response
             int responseCode = connection.getResponseCode();
-            System.out.println("HIER: "+responseCode);
+
             // HTTP-Code 200 = OK
             if (responseCode == 200){
                 InputStream is = connection.getInputStream();

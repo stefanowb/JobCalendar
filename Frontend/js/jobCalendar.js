@@ -139,8 +139,6 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
         function ScheduledTasksFunktion(messageData, result) {
 
-            console.log("hier"+result);
-
             if (result == 'success'){
                 // window.alert(messageData.httpResponse);
                 showCalendar(messageData.httpResponse);
@@ -191,7 +189,7 @@ function changeServer() {
         });
     }
 
-    console.log(calendarEvents);
+    // console.log(calendarEvents);
 
     if(serverID >= 0){
 
