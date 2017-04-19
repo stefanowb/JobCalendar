@@ -178,6 +178,7 @@ public class RequestManager {
                 rd.close();
 
                 response.setResult("success");
+
                 responseDataObject.put("httpResponse", httpResponse.toString());
             } else {
                 response.setResult("error");
@@ -237,7 +238,9 @@ public class RequestManager {
             ArrayList<ScheduleCalendar> schedulCalList = new ArrayList<>();
 
             SQLserverConnector sqlServerConnector = new SQLserverConnector(serverName, userName, password);
-            ArrayList<SQLschedule> scheduleList = cg.getSQLscheduleValues(sqlServerConnector);
+            ArrayList<SQLschedule> scheduleList = sqlServerConnector.getResultSet();
+
+            cg.calculateSQLscheduleFrequencies(scheduleList);
             schedulCalList = cg.getScheduleCalendar(scheduleList, fromDate, toDate);
 
             JSONArray calenderEntriesArray = new JSONArray();
@@ -260,6 +263,8 @@ public class RequestManager {
         }
         catch ( SQLException e )
         {
+            System.out.println("Fehler bei der SQL Abfrage:");
+            System.out.println(e.getMessage());
             e.printStackTrace();
             response.setResult("error");
             response.setErrorMessage(e.getMessage());

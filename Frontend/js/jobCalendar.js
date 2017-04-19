@@ -7,16 +7,16 @@ function webSocketConnectionEstablished(obj) {
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
-        exchangeObject.destination = 'SCalendar/server';
+        //exchangeObject.destination = 'SCalendar/server';
         // exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
-        // exchangeObject.destination = 'SCalendar/SQLRequest';
+         exchangeObject.destination = 'SCalendar/SQLRequest';
 
         var exchangeData = {
             serverName: "localhost",
-            // userName: "sa",
-            // password: "SQLPasswort",
-            // fromDate: 20170418,
-            // toDate: 20170425
+             userName: "sa",
+             password: "SQLPasswort",
+             fromDate: 20170418,
+             toDate: 20170425
         };
         exchangeObject.data = exchangeData;
         jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
@@ -32,6 +32,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             var destination = serverMessage.destination;
             var result = serverMessage.result;
             var data = serverMessage.data;
+            var errorMessage = serverMessage.errorMessage;
 
             console.log('WebSocket Nachricht eingegangen!');
             console.log('destination: ' + destination);
@@ -42,15 +43,15 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             switch(destination) {
                 case 'SCalendar/serverResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
-                    setServerFunktion(data, result);
+                    setServerFunktion(data, result, errorMessage);
                     break;
                 case 'SCalendar/SQLResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
-                    SQLFunktion(data, result);
+                    SQLFunktion(data, result, errorMessage);
                     break;
                 case 'SCalendar/scheduledTasksResponse':
                     // hier sollte man dann eine Methode aufrufen, die dann etwas mit den Daten tut
-                    ScheduledTasksFunktion(data, result);
+                    ScheduledTasksFunktion(data, result, errorMessage);
                     break;
                 default:
                     console.log('Unbekannte WebSocket Nachricht eingegangen ...')
@@ -58,7 +59,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
         }
 
         //setzt server mit DAten aus der INIT Datei
-        function setServerFunktion(messageData, result) {
+        function setServerFunktion(messageData, result, errorMessage) {
 
             var parsedArray = JSON.parse(messageData.httpResponse);
 
@@ -109,7 +110,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             }
         }
 
-        function SQLFunktion(messageData, result) {
+        function SQLFunktion(messageData, result, errorMessage) {
             if (result == 'success') {
                 ShowCalenderEventsArrayInCalender(messageData.sqlResult, false);
                 //window.alert(messageData.sqlResult);
@@ -119,10 +120,11 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                 var outputHeader = '';
                 var outputMessage = '';
 
-                switch (messageData.errorMessage) {
+                switch (errorMessage) {
                     case 'MissingDriver':
-                        outputHeader = 'ScheduledTasks - MissingDriver';
+                        outputHeader = 'SQLQuery - MissingDriver';
                         outputMessage = 'Der SQL-Server Treiber ist auf dem Web-Server nicht vorhanden.';
+                        outputMessage += ' Kopieren Sie die sqljdbc42.jar in das Lib-Verzeichnis des Tomcat-Servers.'
                         break;
                     default:
                         outputHeader = 'SQLQuery - Abfrage Fehler';
@@ -137,7 +139,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             }
         }
 
-        function ScheduledTasksFunktion(messageData, result) {
+        function ScheduledTasksFunktion(messageData, result, errorMessage) {
 
             if (result == 'success'){
                 // window.alert(messageData.httpResponse);
@@ -147,7 +149,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                 var outputHeader = '';
                 var outputMessage = '';
 
-                switch (messageData.errorMessage){
+                switch (errorMessage){
                     case 'SocketTimeout':
                         outputHeader = 'ScheduledTasks - SocketTimeout';
                         outputMessage = 'Der Server ' + messageData.serverName + ' konnte nicht erreicht werden.';
