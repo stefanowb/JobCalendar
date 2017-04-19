@@ -1,8 +1,10 @@
 package main.java.de.jobCalendar.webApi.manager;
 
+import com.sun.javafx.tk.Toolkit;
 import main.java.de.jobCalendar.webApi.common.Response;
 import main.java.de.jobCalendar.webApi.scheduleConverter.*;
 import main.java.de.jobCalendar.webApi.sqlServerQuery.*;
+import main.java.de.jobCalendar.webApi.taskScheduler.TaskCalendarGenerator;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -10,7 +12,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.util.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,7 +23,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.Objects;
+import java.util.Date;
 
 public class RequestManager {
 
@@ -178,6 +181,10 @@ public class RequestManager {
                 rd.close();
 
                 response.setResult("success");
+
+                LocalDateTime fromDate = LocalDateTime.now();
+                LocalDateTime toDate = fromDate.plusDays(7);
+                //TaskCalendarGenerator.getScheduleCalendar(httpResponse.toString(), fromDate, toDate );
 
                 responseDataObject.put("httpResponse", httpResponse.toString());
             } else {
