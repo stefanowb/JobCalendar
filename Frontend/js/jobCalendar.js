@@ -79,7 +79,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             var parsedArray = null;
 
             // if (result == 'success') {
-            //     // ShowCalenderEventsArrayInCalender(messageData.httpResponse, true);
+            //     ShowCalenderEventsArrayInCalender(messageData.httpResponse, true);
             // }
 
             if(calendarEvents != null) {
