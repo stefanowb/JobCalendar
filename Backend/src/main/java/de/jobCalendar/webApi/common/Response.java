@@ -73,7 +73,7 @@ public class Response {
                 .put("destination", this.destination)
                 .put("result", this.result)
                 .put("data", this.data)
-                .put("error", this.errorMessage);
+                .put("errorMessage", this.errorMessage);
         return jsonObject;
     }
 

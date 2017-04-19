@@ -260,6 +260,8 @@ public class RequestManager {
         }
         catch ( SQLException e )
         {
+            System.out.println("Fehler bei der SQL Abfrage:");
+            System.out.println(e.getMessage());
             e.printStackTrace();
             response.setResult("error");
             response.setErrorMessage(e.getMessage());

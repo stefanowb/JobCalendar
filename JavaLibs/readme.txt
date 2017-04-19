@@ -1,0 +1,1 @@
+Die *.jar Dateien aus diesem Verzeichnis müssen in das Lib-Verzeichnis des Tomcat-Servers kopiert werden.
