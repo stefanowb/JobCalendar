@@ -138,8 +138,7 @@ public class CalendarGenerator {
         return schedulCalList;
     }
 
-    public ArrayList<SQLschedule> getSQLscheduleValues(SQLserverConnector sqlServerConnector) throws ClassNotFoundException, SQLException{
-        ArrayList<SQLschedule> scheduleList = sqlServerConnector.getResultSet();
+    public void calculateSQLscheduleFrequencies(ArrayList<SQLschedule> scheduleList) throws ClassNotFoundException, SQLException{
 
         // Listen erstellen fÃ¼r die AuftrÃ¤ge mit subdays und subClocks
         for(SQLschedule ss : scheduleList){
@@ -151,7 +150,6 @@ public class CalendarGenerator {
                 ss.setSubClockList(sc.findSubDaysStarts());
             }
         }
-        return scheduleList;
     }
 
 }

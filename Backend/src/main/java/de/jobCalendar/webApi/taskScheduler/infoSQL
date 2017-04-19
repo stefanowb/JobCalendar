@@ -1,0 +1,46 @@
+package main.java.de.jobCalendar.webApi.taskScheduler;
+
+/**
+ * Created by Stefan on 19.04.2017.
+ */
+public class TaskScheduleConverter {
+
+
+                                                                        // enabled = 1
+                                                                        // description = ''
+                                                                        // Tage: freq_interval => Tage summiert, siehe SQLschedule (wenn freq_type 1 oder 4, dann immer 1)
+    {
+        "id": "e50b81c1-31e8-45c2-9c76-b36bfdc78d09",                   // job_id
+            "title": "STEFAN-LAPTOP: Adobe Acrobat Update Task",        // nameJobs
+            "start": "2017-04-20T09:00:00",
+            "end": "0001-01-01T00:00:00",
+            "error": null,
+            "triggers": [
+        {
+            "triggerId": "TriggerUserLoggon",
+                "triggerType": "Logon",
+                "triggerTypeId": 9,                                     // freq_type => Time = Einmalig = 1; Daily = 4; Weekly = 8; Monthly = ?
+                "executionTimeLimit": "00:00:00",
+                "startBoundary": "2013-08-01T12:05:00",                    // active_start_date  + active_start_time
+                "endBoundary": "2027-05-02T08:00:00",                       // => herausfiltern
+                "repitition": {
+            "duration": "00:00:00",
+                    "interval": "03:30:00",                             // freq_subday_type => 8 = stündlich;  freq_subday_interval
+                    "stopAtDurationEnd": false
+        },
+            "error": null
+        },
+        {
+            "triggerId": "TriggerDaily",
+                "triggerType": "Daily",
+                "triggerTypeId": 2,
+                "executionTimeLimit": "00:00:00",
+                "startBoundary": "2013-01-01T09:00:00",
+                "endBoundary": "2027-05-02T12:05:00",
+                "repitition": null,
+                "error": null
+        }
+    ]
+    },
+
+}
