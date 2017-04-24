@@ -4,12 +4,11 @@ import main.java.de.jobCalendar.webApi.scheduleConverter.ScheduleCalendar;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -97,8 +96,7 @@ public class TaskCalendarGenerator {
                             }
                             break;
                         case "Daily":
-                            // ToDo: Wiederholung alle x Tage ermitteln
-                            int repititionIntervalDays = 3;
+                            int repititionIntervalDays = trigger.getInt("daysInterval");
 
                             currentEventStartTime = start;
 
@@ -124,7 +122,7 @@ public class TaskCalendarGenerator {
 
                             int repititionIntervalWeeks = trigger.getInt("weeksInterval");
                             int daysOfWeekCode = trigger.getInt("daysOfWeek");
-                            TreeMap<Integer, String> daysOfWeek = daysOfWeekHelper.getDaysOfWeek(daysOfWeekCode);
+                            TreeMap<Integer, DayOfWeek> daysOfWeek = daysOfWeekHelper.decodeDaysOfWeek(daysOfWeekCode);
 
                             currentEventStartTime = start;
                             currentRepititionWeekStart = start;
@@ -132,11 +130,14 @@ public class TaskCalendarGenerator {
                             // Wochen durch iterieren
                             while (currentEventStartTime.isBefore(triggerEnd)) {
 
-                                // Wochentage durch iterieren
-                                for (int weekDay : daysOfWeek.keySet()){
+                                // Wochentag des StartTermins ermitteln
+                                DayOfWeek startWeekDay = currentRepititionWeekStart.getDayOfWeek();
 
-                                    //ToDo: Unbedingt korregieren - klappt nur, wenn es am Sonntag startet
-                                    currentEventStartTime = currentRepititionWeekStart.plusDays(weekDay);
+                                // Wochentage durch iterieren
+                                for (DayOfWeek weekDay : daysOfWeek.values()){
+
+                                    int daysUntilStart = daysOfWeekHelper.getDaysBetweenWeekdays(startWeekDay, weekDay);
+                                    currentEventStartTime = currentRepititionWeekStart.plusDays(daysUntilStart);
 
                                     if (currentEventStartTime.isBefore(triggerEnd)){
                                         // für jede Wiederholungstag ein neues Event erzeugen
