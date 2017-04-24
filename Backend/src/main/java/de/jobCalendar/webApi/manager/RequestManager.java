@@ -183,8 +183,17 @@ public class RequestManager {
                 response.setResult("success");
 
                 LocalDateTime fromDate = LocalDateTime.now();
-                LocalDateTime toDate = fromDate.plusDays(7);
-                //TaskCalendarGenerator.getScheduleCalendar(httpResponse.toString(), fromDate, toDate );
+                LocalDateTime toDate = fromDate.plusDays(35);
+                TaskCalendarGenerator taskCalendarGenerator = new TaskCalendarGenerator(httpResponse.toString());
+                ArrayList<ScheduleCalendar> scheduleCalendarList = taskCalendarGenerator.getScheduleCalendar(fromDate, toDate );
+
+                for (ScheduleCalendar event : scheduleCalendarList){
+                    System.out.println(event.getId());
+                    System.out.println(event.getTitle());
+                    System.out.println(event.getStart());
+                    System.out.println(event.getEnd());
+                    System.out.println("-------------------");
+                }
 
                 responseDataObject.put("httpResponse", httpResponse.toString());
             } else {

@@ -11,6 +11,10 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
+import java.util.TreeMap;
+import java.util.UUID;
+
+import static java.time.temporal.ChronoUnit.SECONDS;
 
 
 /**
@@ -18,11 +22,22 @@ import java.util.ArrayList;
  */
 public class TaskCalendarGenerator {
 
-    public static ArrayList<ScheduleCalendar> getScheduleCalendar(String taskSchedulerResult, LocalDateTime fromDate, LocalDateTime toDate){
-        JSONArray taskArray = new JSONArray(taskSchedulerResult);
-        DateTimeFormatter isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-        DateTimeFormatter intervalFormatter = DateTimeFormatter.ISO_LOCAL_TIME;
+    private JSONArray taskArray;
+    private DateTimeFormatter isoFormatter;
+    private DateTimeFormatter intervalFormatter;
+    private DaysOfWeekHelper daysOfWeekHelper;
 
+    public TaskCalendarGenerator(String taskSchedulerResult){
+
+        taskArray = new JSONArray(taskSchedulerResult);
+        isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        intervalFormatter = DateTimeFormatter.ISO_LOCAL_TIME;
+        daysOfWeekHelper = new DaysOfWeekHelper();
+    }
+
+    public ArrayList<ScheduleCalendar> getScheduleCalendar(LocalDateTime fromDate, LocalDateTime toDate){
+
+        ScheduleCalendar newCalenderEntry;
         ArrayList<ScheduleCalendar> scheduleCalendarList = new ArrayList<ScheduleCalendar>();
 
         long daysInRange = fromDate.until(toDate, ChronoUnit.DAYS);
@@ -30,64 +45,119 @@ public class TaskCalendarGenerator {
         for (Object taskObject : taskArray){
             JSONObject task = (JSONObject)taskObject;
 
+            String eventID = task.getString("id");
+            String title = task.getString("title");
             LocalDateTime start = LocalDateTime.parse(task.getString("start"), isoFormatter);
+            LocalDateTime end = LocalDateTime.parse(task.getString("end"), isoFormatter);
+            long eventDurationSeconds = start.until(end, SECONDS);
+
             JSONArray triggers = task.getJSONArray("triggers");
+
+            LocalDateTime currentEventStartTime;
+            LocalDateTime currentRepititionWeekStart;
+            LocalDateTime currentRepititionWeekEnd;
 
             for (Object triggerObject : triggers){
                 JSONObject trigger = (JSONObject)triggerObject;
-                ScheduleCalendar calenderEntry = new ScheduleCalendar();
 
                 LocalDateTime startBoundary = LocalDateTime.parse(trigger.getString("startBoundary"), isoFormatter);
                 LocalDateTime endBoundary = LocalDateTime.parse(trigger.getString("endBoundary"), isoFormatter);
+                LocalDateTime triggerEnd = toDate;
+                if (endBoundary.isBefore(toDate)){
+                    triggerEnd = endBoundary;
+                }
 
                 //Prüfe, ob sich der Trigger im Suchzeitraum befindet
                 if (fromDate.isBefore(endBoundary) && toDate.isAfter(startBoundary)){
 
                     // Bereite das Repitition-Intervall auf
                     JSONObject repitition = null;
-                    int intervalDays = 0;
-                    LocalTime intervalTime = null;
-
                     if (trigger.isNull("repitition") == false){
-                        trigger.getJSONObject("repitition");
+                        repitition = trigger.getJSONObject("repitition");
                     }
 
-                    if (repitition != null){
-                        String intervalString = repitition.getString("interval");
-                        if (intervalString.contains(".")){
-                            String[] intervalSplit = intervalString.split(".");
-                            intervalDays = Integer.parseInt(intervalSplit[0]);
-                            intervalTime = LocalTime.parse(intervalSplit[1], intervalFormatter);
-                        } else {
-                            intervalTime = LocalTime.parse(intervalString, intervalFormatter);
-                        }
-                    }
 
                     switch (trigger.getString("triggerType")){
                         case "Time":
 
-                            break;
-                        case "Daily":
+                            if (start.isBefore(toDate) &&
+                                    start.isBefore(endBoundary)){
 
-                            for (int i = 1; i <= daysInRange; i++){
+                                // ein neues Event für den ersten Start erzeugen
+                                newCalenderEntry = new ScheduleCalendar();
+                                newCalenderEntry.setTitle(title);
+                                newCalenderEntry.setId(UUID.randomUUID().toString());
+                                newCalenderEntry.setStart(start);
+                                newCalenderEntry.setEnd(start.plus(eventDurationSeconds, SECONDS));
+                                scheduleCalendarList.add(newCalenderEntry);
 
                                 if (repitition != null){
-                                    LocalDateTime repititionDate = start;
-                                    while (repititionDate.isBefore(endBoundary)){
+                                    addRepititionEvents(scheduleCalendarList, repitition, start, title, eventDurationSeconds);
+                                }
+                            }
+                            break;
+                        case "Daily":
+                            // ToDo: Wiederholung alle x Tage ermitteln
+                            int repititionIntervalDays = 3;
 
-                                        // <== hier muss jetzt ein Eintrag geadded werden
+                            currentEventStartTime = start;
 
-                                        repititionDate = repititionDate.plusHours(intervalTime.getHour());
-                                        repititionDate = repititionDate.plusMinutes(intervalTime.getMinute());
-                                        repititionDate = repititionDate.plusSeconds(intervalTime.getSecond());
-                                    }
+                            while (currentEventStartTime.isBefore(triggerEnd)){
+
+                                // für jede Wiederholungstag ein neues Event erzeugen
+                                newCalenderEntry = new ScheduleCalendar();
+                                newCalenderEntry.setTitle(title);
+                                newCalenderEntry.setId(UUID.randomUUID().toString());
+                                newCalenderEntry.setStart(currentEventStartTime);
+                                newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
+                                scheduleCalendarList.add(newCalenderEntry);
+
+                                if (repitition != null){
+                                    addRepititionEvents(scheduleCalendarList, repitition, currentEventStartTime, title, eventDurationSeconds);
                                 }
 
+                                currentEventStartTime = currentEventStartTime.plusDays(repititionIntervalDays);
                             }
-
 
                             break;
                         case "Weekly":
+
+                            int repititionIntervalWeeks = trigger.getInt("weeksInterval");
+                            int daysOfWeekCode = trigger.getInt("daysOfWeek");
+                            TreeMap<Integer, String> daysOfWeek = daysOfWeekHelper.getDaysOfWeek(daysOfWeekCode);
+
+                            currentEventStartTime = start;
+                            currentRepititionWeekStart = start;
+
+                            // Wochen durch iterieren
+                            while (currentEventStartTime.isBefore(triggerEnd)) {
+
+                                // Wochentage durch iterieren
+                                for (int weekDay : daysOfWeek.keySet()){
+
+                                    //ToDo: Unbedingt korregieren - klappt nur, wenn es am Sonntag startet
+                                    currentEventStartTime = currentRepititionWeekStart.plusDays(weekDay);
+
+                                    if (currentEventStartTime.isBefore(triggerEnd)){
+                                        // für jede Wiederholungstag ein neues Event erzeugen
+                                        newCalenderEntry = new ScheduleCalendar();
+                                        newCalenderEntry.setTitle(title);
+                                        newCalenderEntry.setId(UUID.randomUUID().toString());
+                                        newCalenderEntry.setStart(currentEventStartTime);
+                                        newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
+                                        scheduleCalendarList.add(newCalenderEntry);
+
+                                        if (repitition != null){
+                                            addRepititionEvents(scheduleCalendarList, repitition, currentEventStartTime, title, eventDurationSeconds);
+                                        }
+                                    }
+
+                                }
+
+                                currentRepititionWeekStart = currentRepititionWeekStart.plusDays(repititionIntervalWeeks * 7);
+                                currentEventStartTime = currentRepititionWeekStart;
+                            }
+
                             break;
                         case "Monthly":
                             break;
@@ -96,13 +166,79 @@ public class TaskCalendarGenerator {
                         default:
                             break;
                     }
-
-                    scheduleCalendarList.add(calenderEntry);
-
                 }
             }
         }
 
         return scheduleCalendarList;
     }
+
+    /**
+     * fügt der übergebenen ScheduleCalendarList einzelne Kalender einträge für jede Repitition im
+     * übergebenen Intervall hinzu.
+     * @param scheduleCalendarList
+     * @param repitition
+     * @param repititionStart
+     * @param title
+     * @param eventDurationSeconds
+     */
+    private void addRepititionEvents(ArrayList<ScheduleCalendar> scheduleCalendarList, JSONObject repitition,
+                                     LocalDateTime repititionStart,
+                                     String title, long eventDurationSeconds){
+
+        ScheduleCalendar newCalenderEntry;
+        LocalDateTime currentEventStartTime = repititionStart;
+
+        IntervalSplitter intervalSplitter = new IntervalSplitter(repitition.getString("interval"), intervalFormatter);
+        IntervalSplitter durationSplitter = new IntervalSplitter(repitition.getString("duration"), intervalFormatter);
+        int intervalDays = intervalSplitter.getIntervalDays();
+        LocalTime intervalTime = intervalSplitter.getIntervalTime();
+        int durationDays = durationSplitter.getIntervalDays();
+        LocalTime durationTime = durationSplitter.getIntervalTime();
+
+        LocalDateTime durationEnd = repititionStart.plusDays(durationDays);
+        durationEnd = durationEnd.plusHours(durationTime.getHour());
+        durationEnd = durationEnd.plusMinutes(durationTime.getMinute());
+        durationEnd = durationEnd.plusSeconds(durationTime.getSecond());
+
+        currentEventStartTime = currentEventStartTime.plusDays(intervalDays);
+        currentEventStartTime = currentEventStartTime.plusHours(intervalTime.getHour());
+        currentEventStartTime = currentEventStartTime.plusMinutes(intervalTime.getMinute());
+        currentEventStartTime = currentEventStartTime.plusSeconds(intervalTime.getSecond());
+
+        while (currentEventStartTime.isBefore(durationEnd)){
+
+            // für jede Repitition ein neues Event erzeugen
+            newCalenderEntry = new ScheduleCalendar();
+            newCalenderEntry.setTitle(title);
+            newCalenderEntry.setId(UUID.randomUUID().toString());
+            newCalenderEntry.setStart(currentEventStartTime);
+            newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
+            scheduleCalendarList.add(newCalenderEntry);
+
+            currentEventStartTime = currentEventStartTime.plusDays(intervalDays);
+            currentEventStartTime = currentEventStartTime.plusHours(intervalTime.getHour());
+            currentEventStartTime = currentEventStartTime.plusMinutes(intervalTime.getMinute());
+            currentEventStartTime = currentEventStartTime.plusSeconds(intervalTime.getSecond());
+        }
+    }
+
+    /*
+    private void addTimeEvents(ArrayList<ScheduleCalendar> scheduleCalendarList){
+
+    }
+
+    private void addDaylyEvents(ArrayList<ScheduleCalendar> scheduleCalendarList){
+
+    }
+
+    private void addMonthlyEvents(ArrayList<ScheduleCalendar> scheduleCalendarList){
+
+    }
+
+    private void addMonthlyDowEvents(ArrayList<ScheduleCalendar> scheduleCalendarList){
+
+    }
+    */
+
 }
