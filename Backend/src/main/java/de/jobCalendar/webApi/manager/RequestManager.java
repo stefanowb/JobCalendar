@@ -5,6 +5,7 @@ import main.java.de.jobCalendar.webApi.common.Response;
 import main.java.de.jobCalendar.webApi.scheduleConverter.*;
 import main.java.de.jobCalendar.webApi.sqlServerQuery.*;
 import main.java.de.jobCalendar.webApi.taskScheduler.TaskCalendarGenerator;
+import main.java.de.jobCalendar.webApi.taskScheduler.TaskSchedulerRequest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -65,14 +66,8 @@ public class RequestManager {
 
         // Hier wird je nach gesendeter WebSocket-Request eine bestimmte Methode für eine WebSocket-Response aufgerufen
         switch(requestDestination) {
-            case "SCalendar/testRequest":
-                response = getTestResponse(requestData);
-                break;
-            case "SCalendar/SQLRequest":
-                response = getSQLResponse(requestData);
-                break;
-            case "SCalendar/scheduledTasksRequest":
-                response = getScheduledTasksResponse(requestData);
+            case "SCalendar/calendarEventsRequest":
+                response = getCalendarEventsResponse(requestData);
                 break;
             case "SCalendar/server":
                 response = getServer(requestData);
@@ -132,159 +127,70 @@ public class RequestManager {
         return response;
     }
 
-    public Response getTestResponse(JSONObject requestData){
-
-        Response response = new Response();
-        response.setDestination("SCalendar/testResponse");
-        response.setResult("success");
-
-        JSONObject dataObject = new JSONObject();
-        dataObject.put("eineLustigeAntwort", "Hey, dies ist eine Antwort auf eine Websocket Nachricht. Es funzt. Wuhuuuu!");
-        response.setData(dataObject);
-
-        return response;
-    }
-
-    public  Response getScheduledTasksResponse(JSONObject requestData) throws Exception{
+    public  Response getCalendarEventsResponse(JSONObject requestData) throws Exception{
         Response response = new Response();
         JSONObject responseDataObject = new JSONObject();
-        response.setDestination("SCalendar/scheduledTasksResponse");
+        JSONArray calenderEntriesArray = new JSONArray();
+        ArrayList<ScheduleCalendar> taskSchedulerEvents;
+        ArrayList<ScheduleCalendar> sqlEvents;
 
+        response.setDestination("SCalendar/calendarEventsResponse");
         String serverName = requestData.getString("serverName");
+        int nextDaysRange = requestData.getInt("nextDaysRange");
         responseDataObject.put("serverName", serverName);
-        String targetURL = String.format("http://%s:9876/taskschedulermonitor/scheduled_tasks", serverName);
 
-        HttpURLConnection connection = null;
+        LocalDateTime fromDate = LocalDateTime.now();
+        LocalDateTime toDate = fromDate.plusDays(nextDaysRange);
 
-        try {
-            //Create connection
-            URL url = new URL(targetURL);
-            connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);     // Connection Timeout (5 Sekunden)
-            connection.setReadTimeout(5000);        // Socket Timeout (5 Sekunden)
-            connection.setUseCaches(false);
-            //Get Response
-            int responseCode = connection.getResponseCode();
+        //ToDo: hier müsste irgendwie auf die INI zugegriffen werden und die Server-Paramter ermittelt werden
+        // hier kommen jetzt dafür erstmal Platzhalter:
+        boolean doSqlRequest = true;
+        boolean doTaskSchedulerRequest = true;
+        String sqlUser = "sa";
+        String sqlPassword = "SQLPasswort";
 
-            // HTTP-Code 200 = OK
-            if (responseCode == 200){
-                InputStream is = connection.getInputStream();
-
-                BufferedReader rd = new BufferedReader(new InputStreamReader(is));
-                StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
-                String line;
-                while ((line = rd.readLine()) != null) {
-                    httpResponse.append(line);
-                    httpResponse.append('\r');
+        if (doTaskSchedulerRequest){
+            TaskSchedulerRequest taskSchedulerRequest = new TaskSchedulerRequest(serverName);
+            String requestResult = taskSchedulerRequest.executeRequest();
+            if (requestResult == "success"){
+                taskSchedulerEvents = taskSchedulerRequest.getCalendarEventList(fromDate, toDate);
+                for(ScheduleCalendar calendarEvent : taskSchedulerEvents){
+                    calendarEvent.setBackgroundColor("#2E64FE");
+                    calendarEvent.setBorderColor("#2E2EFE");
+                    calendarEvent.setTextColor("#FFFFFF");
+                    calenderEntriesArray.put(calendarEvent.toJSON());
                 }
-                rd.close();
-
-                response.setResult("success");
-
-                LocalDateTime fromDate = LocalDateTime.now();
-                LocalDateTime toDate = fromDate.plusDays(35);
-                TaskCalendarGenerator taskCalendarGenerator = new TaskCalendarGenerator(httpResponse.toString());
-                ArrayList<ScheduleCalendar> scheduleCalendarList = taskCalendarGenerator.getScheduleCalendar(fromDate, toDate );
-
-                for (ScheduleCalendar event : scheduleCalendarList){
-                    System.out.println(event.getId());
-                    System.out.println(event.getTitle());
-                    System.out.println(event.getStart());
-                    System.out.println(event.getEnd());
-                    System.out.println("-------------------");
-                }
-
-                responseDataObject.put("httpResponse", httpResponse.toString());
             } else {
                 response.setResult("error");
-                responseDataObject.put("errorMessage", "HTTP-Code: " + responseCode);
+                responseDataObject.put("errorMessage", requestResult);
+                response.setData(responseDataObject);
+                return response;
             }
 
-        } catch (java.net.SocketTimeoutException e) {
-            e.printStackTrace();
-            response.setResult("error");
-            responseDataObject.put("errorMessage", "SocketTimeout");
+        }
 
-        } catch (java.net.UnknownHostException e) {
-            e.printStackTrace();
-            response.setResult("error");
-            responseDataObject.put("errorMessage", "UnknownHost");
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.setResult("error");
-            responseDataObject.put("errorMessage", e.getMessage());
-
-        } finally {
-            if (connection != null) {
-                connection.disconnect();
+        if (doSqlRequest){
+            SqlSchedulerRequest sqlSchedulerRequest = new SqlSchedulerRequest(serverName, sqlUser, sqlPassword);
+            String requestResult = sqlSchedulerRequest.executeRequest();
+            if (requestResult == "success"){
+                sqlEvents = sqlSchedulerRequest.getCalendarEventList(fromDate, toDate);
+                for(ScheduleCalendar calendarEvent : sqlEvents){
+                    calendarEvent.setBackgroundColor("#FE9A2E");
+                    calendarEvent.setBorderColor("#B45F04");
+                    calendarEvent.setTextColor("#000000");
+                    calenderEntriesArray.put(calendarEvent.toJSON());
+                }
+            } else {
+                response.setResult("error");
+                responseDataObject.put("errorMessage", requestResult);
+                response.setData(responseDataObject);
+                return response;
             }
         }
 
+        response.setResult("success");
+        responseDataObject.put("calendarEvents", calenderEntriesArray);
         response.setData(responseDataObject);
-        return response;
-    }
-
-    public Response getSQLResponse(JSONObject requestData) throws Exception{
-        Response response = new Response();
-        response.setDestination("SCalendar/SQLResponse");
-
-        String serverName = requestData.getString("serverName");
-        String userName = requestData.getString("userName");
-        String password = requestData.getString("password");
-        int fromDate = requestData.getInt("fromDate");
-        int toDate = requestData.getInt("toDate");
-
-        try
-        {
-            Class.forName( "com.microsoft.sqlserver.jdbc.SQLServerDriver" );
-        }
-        catch ( ClassNotFoundException e )
-        {
-            response.setResult("error");
-            response.setErrorMessage("MissingDriver");
-            return response;
-        }
-
-        try
-        {
-            CalendarGenerator cg = new CalendarGenerator();
-            ArrayList<ScheduleCalendar> schedulCalList = new ArrayList<>();
-
-            SQLserverConnector sqlServerConnector = new SQLserverConnector(serverName, userName, password);
-            ArrayList<SQLschedule> scheduleList = sqlServerConnector.getResultSet();
-
-            cg.calculateSQLscheduleFrequencies(scheduleList);
-            schedulCalList = cg.getScheduleCalendar(scheduleList, fromDate, toDate);
-
-            JSONArray calenderEntriesArray = new JSONArray();
-            for(ScheduleCalendar sca : schedulCalList){
-                JSONObject calenderEntryObject = new JSONObject();
-
-                calenderEntryObject.put("id", sca.getId());
-                calenderEntryObject.put("title", sca.getTitle());
-                calenderEntryObject.put("start", sca.getStart());
-                calenderEntryObject.put("end", sca.getEnd());
-
-                calenderEntriesArray.put(calenderEntryObject);
-            }
-
-            response.setResult("success");
-            JSONObject dataObject = new JSONObject();
-            dataObject.put("sqlResult", calenderEntriesArray);
-            response.setData(dataObject);
-
-        }
-        catch ( SQLException e )
-        {
-            System.out.println("Fehler bei der SQL Abfrage:");
-            System.out.println(e.getMessage());
-            e.printStackTrace();
-            response.setResult("error");
-            response.setErrorMessage(e.getMessage());
-        }
 
         return response;
     }

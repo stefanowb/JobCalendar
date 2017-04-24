@@ -21,9 +21,9 @@ public class SQLserverConnector {
     }
 
     public ArrayList<SQLschedule> getResultSet () throws ClassNotFoundException, SQLException {
+        Class.forName( "com.microsoft.sqlserver.jdbc.SQLServerDriver" );
         String connectionURL = String.format("jdbc:sqlserver://%s:1433;databaseName=msdb;user=%s;password=%s;", serverName, userName, password);
         Connection con = DriverManager.getConnection(connectionURL);
-        Class.forName( "com.microsoft.sqlserver.jdbc.SQLServerDriver" );
         Statement stmt = null;
         ResultSet rs = null;
         ArrayList<SQLschedule> scheduleList = new ArrayList<>();

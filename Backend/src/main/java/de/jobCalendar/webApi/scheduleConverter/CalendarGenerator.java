@@ -138,7 +138,7 @@ public class CalendarGenerator {
         return schedulCalList;
     }
 
-    public void calculateSQLscheduleFrequencies(ArrayList<SQLschedule> scheduleList) throws ClassNotFoundException, SQLException{
+    public void calculateSQLscheduleFrequencies(ArrayList<SQLschedule> scheduleList) {
 
         // Listen erstellen fÃ¼r die AuftrÃ¤ge mit subdays und subClocks
         for(SQLschedule ss : scheduleList){

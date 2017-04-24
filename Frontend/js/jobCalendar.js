@@ -7,16 +7,12 @@ function webSocketConnectionEstablished(obj) {
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
-         exchangeObject.destination = 'SCalendar/server';
-        // exchangeObject.destination = 'SCalendar/scheduledTasksRequest';
-        // exchangeObject.destination = 'SCalendar/SQLRequest';
+        // exchangeObject.destination = 'SCalendar/server';
+        exchangeObject.destination = 'SCalendar/calendarEventsRequest';
 
         var exchangeData = {
             serverName: "localhost",
-             userName: "sa",
-             password: "SQLPasswort",
-             fromDate: 20170418,
-             toDate: 20170425
+            nextDaysRange: 31,
         };
         exchangeObject.data = exchangeData;
         jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
