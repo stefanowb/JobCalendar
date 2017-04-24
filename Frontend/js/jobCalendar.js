@@ -7,8 +7,8 @@ function webSocketConnectionEstablished(obj) {
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
 
         var exchangeObject = Object.create(jobCalendar.model.Request);
-        // exchangeObject.destination = 'SCalendar/server';
-        exchangeObject.destination = 'SCalendar/calendarEventsRequest';
+         exchangeObject.destination = 'SCalendar/server';
+        //exchangeObject.destination = 'SCalendar/calendarEventsRequest';
 
         var exchangeData = {
             serverName: "localhost",
