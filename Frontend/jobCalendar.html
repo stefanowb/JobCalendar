@@ -43,11 +43,11 @@
         padding: 0 10px;
     }
 
-    #mySelect {
+    #selectServerInput {
         border-radius: 5px 5px;
     }
 
-    #myInput {
+    #timeRangeInput {
         border-radius: 5px 5px;
         width: 30px;
     }
@@ -68,14 +68,14 @@
 
     <div id="server">
         <label>Change Server: </label>
-        <select id="mySelect" name="select">
+        <select id="selectServerInput" name="select">
             <option value=""></option>
         </select>
         <button onclick="changeServer()">Change Server</button>
 
         <label style="padding-left: 60px;">Time Range: </label>
-        <input id="myInput" type="text">
-        <button onclick="changeTRange()">Change Time Range</button>
+        <input id="timeRangeInput" type="text" value="7">
+        <button onclick="changeServer()">Change Time Range</button>
         <label>in Days</label>
     </div>
 

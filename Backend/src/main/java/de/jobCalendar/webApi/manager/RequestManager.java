@@ -1,30 +1,16 @@
 package main.java.de.jobCalendar.webApi.manager;
 
-import com.sun.javafx.tk.Toolkit;
 import main.java.de.jobCalendar.webApi.common.Response;
 import main.java.de.jobCalendar.webApi.scheduleConverter.*;
 import main.java.de.jobCalendar.webApi.sqlServerQuery.*;
-import main.java.de.jobCalendar.webApi.taskScheduler.TaskCalendarGenerator;
 import main.java.de.jobCalendar.webApi.taskScheduler.TaskSchedulerRequest;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.sql.*;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.Date;
 
 public class RequestManager {
 
@@ -40,7 +26,7 @@ public class RequestManager {
         // JSON-String-Request in Request-Javaobjekt umwandeln
         JSONObject requestJson;
         String requestDestination;
-        JSONObject requestData;
+        JSONObject requestData = null;
         Response response;
 
         try {
@@ -52,7 +38,9 @@ public class RequestManager {
 
         try {
             requestDestination = requestJson.getString("destination");
-            requestData = requestJson.getJSONObject("data");
+            if (requestJson.isNull("data") == false){
+                requestData = requestJson.getJSONObject("data");
+            }
 
         } catch (NullPointerException ex) {
             throw new Exception("Fehler beim Extrahieren der Eigenschaften " +
@@ -69,7 +57,7 @@ public class RequestManager {
             case "SCalendar/calendarEventsRequest":
                 response = getCalendarEventsResponse(requestData);
                 break;
-            case "SCalendar/server":
+            case "SCalendar/serverListRequest":
                 response = getServer(requestData);
                 break;
             default:
@@ -86,40 +74,19 @@ public class RequestManager {
     public Response getServer(JSONObject requestData) throws Exception{
         Response response = new Response();
 
-        response.setDestination("SCalendar/serverResponse");
+        response.setDestination("SCalendar/serverListResponse");
         response.setResult("success");
 
         JSONObject dataObject = new JSONObject();
 
-        String datName = "C:/jobCalendar/init.txt";
-
-        File file = new File(datName);
-
-        if (!file.canRead() || !file.isFile())
-            System.exit(0);
-
-        BufferedReader in = null;
         try {
-            in = new BufferedReader(new FileReader(datName));
-            String zeile = null;
+            String iniContent = InstanceManager.getConfigManager().getInitContent();
+            dataObject.put("initData", iniContent);
 
-            StringBuilder httpResponse = new StringBuilder(); // or StringBuffer if Java version 5+
-
-            while ((zeile = in.readLine()) != null) {
-                    httpResponse.append(zeile);
-                    httpResponse.append('\r');
-            }
-
-            dataObject.put("httpResponse", httpResponse.toString());
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (in != null)
-                try {
-                    in.close();
-                } catch (IOException e) {
-                }
+        } catch (IOException ex){
+            ex.printStackTrace();
+            response.setResult("error");
+            response.setErrorMessage(ex.getMessage());
         }
 
         response.setData(dataObject);
@@ -133,21 +100,19 @@ public class RequestManager {
         JSONArray calenderEntriesArray = new JSONArray();
         ArrayList<ScheduleCalendar> taskSchedulerEvents;
         ArrayList<ScheduleCalendar> sqlEvents;
-
         response.setDestination("SCalendar/calendarEventsResponse");
         String serverName = requestData.getString("serverName");
-        int nextDaysRange = requestData.getInt("nextDaysRange");
         responseDataObject.put("serverName", serverName);
+
+        int nextDaysRange = requestData.getInt("nextDaysRange");
 
         LocalDateTime fromDate = LocalDateTime.now();
         LocalDateTime toDate = fromDate.plusDays(nextDaysRange);
 
-        //ToDo: hier müsste irgendwie auf die INI zugegriffen werden und die Server-Paramter ermittelt werden
-        // hier kommen jetzt dafür erstmal Platzhalter:
-        boolean doSqlRequest = true;
-        boolean doTaskSchedulerRequest = true;
-        String sqlUser = "sa";
-        String sqlPassword = "SQLPasswort";
+        // hole die Ini-Daten des Servers vom Config-Manager
+        JSONObject serverInitData = InstanceManager.getConfigManager().getServerInitData(serverName);
+        boolean doSqlRequest = serverInitData.getBoolean("sql");
+        boolean doTaskSchedulerRequest = serverInitData.getBoolean("task");
 
         if (doTaskSchedulerRequest){
             TaskSchedulerRequest taskSchedulerRequest = new TaskSchedulerRequest(serverName);
@@ -170,6 +135,8 @@ public class RequestManager {
         }
 
         if (doSqlRequest){
+            String sqlUser = serverInitData.getString("sqlUser");
+            String sqlPassword = serverInitData.getString("sqlPassword");
             SqlSchedulerRequest sqlSchedulerRequest = new SqlSchedulerRequest(serverName, sqlUser, sqlPassword);
             String requestResult = sqlSchedulerRequest.executeRequest();
             if (requestResult == "success"){

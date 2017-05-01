@@ -68,8 +68,8 @@ public class SqlSchedulerRequest {
      */
     public ArrayList<ScheduleCalendar> getCalendarEventList(LocalDateTime fromDate, LocalDateTime toDate){
 
-        String fromString = String.format("%d%02d%d", fromDate.getYear(), fromDate.getMonthValue(), fromDate.getDayOfMonth());
-        String toString = String.format("%d%02d%d", toDate.getYear(), toDate.getMonthValue(), toDate.getDayOfMonth());
+        String fromString = String.format("%d%02d%02d", fromDate.getYear(), fromDate.getMonthValue(), fromDate.getDayOfMonth());
+        String toString = String.format("%d%02d%02d", toDate.getYear(), toDate.getMonthValue(), toDate.getDayOfMonth());
         int fromInt = Integer.parseInt(fromString);
         int toInt = Integer.parseInt(toString);
 
