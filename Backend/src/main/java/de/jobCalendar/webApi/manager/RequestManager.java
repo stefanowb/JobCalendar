@@ -127,7 +127,7 @@ public class RequestManager {
                 }
             } else {
                 response.setResult("error");
-                responseDataObject.put("errorMessage", requestResult);
+                response.setErrorMessage(requestResult);
                 response.setData(responseDataObject);
                 return response;
             }
@@ -149,7 +149,7 @@ public class RequestManager {
                 }
             } else {
                 response.setResult("error");
-                responseDataObject.put("errorMessage", requestResult);
+                response.setErrorMessage(requestResult);
                 response.setData(responseDataObject);
                 return response;
             }

@@ -38,8 +38,8 @@ public class TaskSchedulerRequest {
             URL url = new URL(targetURL);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setConnectTimeout(5000);     // Connection Timeout (5 Sekunden)
-            connection.setReadTimeout(5000);        // Socket Timeout (5 Sekunden)
+            connection.setConnectTimeout(5000);     // Connection Timeout (10 Sekunden)
+            connection.setReadTimeout(5000);        // Socket Timeout (10 Sekunden)
             connection.setUseCaches(false);
             //Get Response
             int responseCode = connection.getResponseCode();
