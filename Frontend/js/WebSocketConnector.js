@@ -42,10 +42,9 @@ jobCalendar.core.WebSocketConnector = jobCalendar.core.WebSocketConnector || (fu
                     console.log('Nachricht: ' + event.data);
                     jobCalendar.controller.GlobalNotification.showNotification(
                         jobCalendar.model.GlobalNotificationType.ERROR,
-                        'Server-Verbindung',
-                        'Die Antwort des Servers ist nicht gültig. ' +
-                        ' Bitte versuchen Sie es erneut oder fragen den Administrator der' +
-                        ' Webseite.', 5000);
+                        'Server-Connection',
+                        'Invalid server response. ' +
+                        ' Please try again or ask the administrator of the server.', 5000);
                 }
 
                 console.log('Servernachricht: ' + serverMessage);
@@ -59,10 +58,9 @@ jobCalendar.core.WebSocketConnector = jobCalendar.core.WebSocketConnector || (fu
                 console.log('Fehlermeldung: ' + error);
                 jobCalendar.controller.GlobalNotification.showNotification(
                     jobCalendar.model.GlobalNotificationType.ERROR,
-                    'Server-Verbindung',
-                    'Die Verbindung zum Server wurde unterbrochen.' +
-                    ' Bitte versuchen Sie es erneut oder fragen den Administrator der' +
-                    ' Webseite.', 5000);
+                    'Server-Connection',
+                    'The Connection to the was interrupted.' +
+                    ' Please try again or ask the administrator of the server.', 5000);
                 isConnected = false;
             };
             webSocket.onclose = function (event) {
@@ -70,21 +68,21 @@ jobCalendar.core.WebSocketConnector = jobCalendar.core.WebSocketConnector || (fu
                 var reason = '';
 
                 if (event.code === 1006) {
-                    reason = 'WebSocket-Verbindung zum Application Server konnte nicht aufgebaut werden';
+                    reason = 'WebSocket-to the server could not be established';
                 }
                 if (event.code === 1001) {
-                    reason = 'WebSocket-Verbindung zum Application Server wurde unterbrochen';
+                    reason = 'WebSocket-Connection to the application server was interrupted';
                 }
                 if (event.code === 1008 || event.code === 1003) {
                     reason = event.reason;
                 }
-                var errorText = 'Grund für Verbindungstrennung: ' + event.code + ' --- ' + reason;
+                var errorText = 'Reason: ' + event.code + ' --- ' + reason;
                 console.log(errorText);
 
                 jobCalendar.controller.GlobalNotification.showNotification(
                     jobCalendar.model.GlobalNotificationType.ERROR,
-                    'Server-Verbindung',
-                    'Die Verbindung zum Server wurde geschlossen.' +
+                    'Server-Connection',
+                    'The connection to the server was terminated.' +
                     errorText, 5000);
                 // besser als Objekt schreiben um nicht zu verwirren?
                 // callbackfunction(false, {

@@ -25,32 +25,31 @@ public class WebSocketEndpoint {
             }
         } catch (Exception ex) {
             try {
-                log.log(Level.SEVERE, "Beim Behandeln des Requests ist ein " +
-                        "Fehler aufgetreten! Die " +
-                        "WebSocket-Verbindung wird geschlossen werden!\n" +
-                        "Fehlermeldung: " + ex.getMessage());
+                log.log(Level.SEVERE, "An error occurred while processing the request! The " +
+                        "WebSocket-Connection will be terminated!\n" +
+                        "Error: " + ex.getMessage());
                 session.close();
             } catch (Exception e1) {
-                log.log(Level.SEVERE, "Beim Schliessen der " +
-                        "WebSocket-Verbindung ist ein Fehler aufgetreten!\n" +
-                        "Fehlermeldung: " + ex.getMessage());
+                log.log(Level.SEVERE, "An error occurred while closing the " +
+                        "WebSocket-Connection!\n" +
+                        "Error: " + ex.getMessage());
             }
         }
     }
 
     @OnOpen
     public void open(Session session) {
-        log.log(Level.INFO, "Eine neue Session wurde gestartet.");
+        log.log(Level.INFO, "A new Session was started.");
     }
 
     @OnClose
     public void close(Session session) {
-        log.log(Level.INFO, "Die Session wurde beendet.");
+        log.log(Level.INFO, "The session was terminated.");
     }
 
     @OnError
     public void onError(Throwable error) {
-        log.log(Level.SEVERE, "Es trat ein Fehler auf in der Session.\n" +
-                "Fehlermeldung: " + error.toString());
+        log.log(Level.SEVERE, "An Error occurred in this session.\n" +
+                "Error: " + error.toString());
     }
 }

@@ -1,6 +1,7 @@
 package main.java.de.jobCalendar.webApi.sqlServerQuery;
 
 
+import com.microsoft.sqlserver.jdbc.SQLServerException;
 import main.java.de.jobCalendar.webApi.common.Response;
 import main.java.de.jobCalendar.webApi.scheduleConverter.CalendarGenerator;
 import main.java.de.jobCalendar.webApi.scheduleConverter.SQLschedule;

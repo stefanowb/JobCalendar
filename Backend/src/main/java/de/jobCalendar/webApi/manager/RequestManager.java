@@ -149,7 +149,8 @@ public class RequestManager {
                 }
             } else {
                 response.setResult("error");
-                response.setErrorMessage(requestResult);
+                response.setErrorMessage("SqlException");
+                responseDataObject.put("errorMessage", requestResult);
                 response.setData(responseDataObject);
                 return response;
             }

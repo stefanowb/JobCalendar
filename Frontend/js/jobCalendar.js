@@ -111,7 +111,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
             } else {
 
-                var outputHeader = 'Server: Fehler beim lesen der Ini-Datei';
+                var outputHeader = 'Server: Error while reading the ini file.';
                 var outputMessage = messageData.errorMessage;
 
                 jobCalendar.controller.GlobalNotification.showNotification(
@@ -131,27 +131,31 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                 switch (errorMessage) {
                     case 'MissingDriver':
                         outputHeader = 'MissingDriver';
-                        outputMessage = 'Der SQL-Server Treiber ist auf dem Web-Server nicht vorhanden.';
-                        outputMessage += ' Kopieren Sie die sqljdbc42.jar in das Lib-Verzeichnis des Tomcat-Servers.'
+                        outputMessage = 'The jdbc SQL-Server driver is missing on the application server.';
+                        outputMessage += ' Please copy sqljdbc42.jar into the lib directory of your application server.'
                         break;
                     case 'SocketTimeout':
                         outputHeader = 'SocketTimeout';
-                        outputMessage = 'Der Server ' + messageData.serverName + ' konnte nicht erreicht werden.';
+                        outputMessage = 'The server ' + messageData.serverName + ' could not be reached.';
                         break;
                     case 'UnknownHost':
-                        outputHeader = 'Unbekannter Host';
-                        outputMessage = 'Der Server mit dem Namen ' + messageData.serverName + ' existiert nicht.';
+                        outputHeader = 'Unknown Host';
+                        outputMessage = 'The Server ' + messageData.serverName + ' seems not to exist.';
+                        break;
+                    case 'SqlException':
+                        outputHeader = 'SQL-Exception';
+                        outputMessage = messageData.errorMessage;
                         break;
                     default:
-                        outputHeader = 'Unbekannter Fehler';
-                        outputMessage = 'Bei der Abfrage der Daten des Servers ' + messageData.serverName +
-                            ' ist ein unbekannter Fehler aufgetreten. Fehlermeldung: ' + messageData.errorMessage;
+                        outputHeader = 'Unknown Error';
+                        outputMessage = 'An unknown exception occured while requesting the server  ' + messageData.serverName +
+                            ': ' + messageData.errorMessage;
                         break;
                 }
 
                 jobCalendar.controller.GlobalNotification.showNotification(
                     jobCalendar.model.GlobalNotificationType.ERROR,
-                    outputHeader, outputMessage, 8000);
+                    outputHeader, outputMessage, 10000);
             }
         }
 
