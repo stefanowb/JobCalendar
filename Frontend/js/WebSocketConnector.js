@@ -85,8 +85,7 @@ jobCalendar.core.WebSocketConnector = jobCalendar.core.WebSocketConnector || (fu
                     jobCalendar.model.GlobalNotificationType.ERROR,
                     'Server-Verbindung',
                     'Die Verbindung zum Server wurde geschlossen.' +
-                    ' Bitte versuchen Sie es erneut oder fragen den Administrator der' +
-                    ' Webseite.', 5000);
+                    errorText, 5000);
                 // besser als Objekt schreiben um nicht zu verwirren?
                 // callbackfunction(false, {
                 //     code: event.code,
