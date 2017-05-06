@@ -105,6 +105,7 @@ public class RequestManager {
         responseDataObject.put("serverName", serverName);
 
         int nextDaysRange = requestData.getInt("nextDaysRange");
+        int timeOut = requestData.getInt("timeOut");
 
         LocalDateTime fromDate = LocalDateTime.now();
         LocalDateTime toDate = fromDate.plusDays(nextDaysRange);
@@ -116,7 +117,7 @@ public class RequestManager {
 
         if (doTaskSchedulerRequest){
             TaskSchedulerRequest taskSchedulerRequest = new TaskSchedulerRequest(serverName);
-            String requestResult = taskSchedulerRequest.executeRequest();
+            String requestResult = taskSchedulerRequest.executeRequest(timeOut);
             if (requestResult == "success"){
                 taskSchedulerEvents = taskSchedulerRequest.getCalendarEventList(fromDate, toDate);
                 for(ScheduleCalendar calendarEvent : taskSchedulerEvents){

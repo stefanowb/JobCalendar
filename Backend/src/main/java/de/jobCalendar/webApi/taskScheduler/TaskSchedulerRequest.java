@@ -28,7 +28,7 @@ public class TaskSchedulerRequest {
      * Dies ist ein Zwischenschritt, der bei Erfolg die HTTP-Response zwischenspeichert.
      * @return 'success' bei Erfolg, andernfalls die Fehlermeldung.
      */
-    public String executeRequest(){
+    public String executeRequest(int timeOut){
 
         HttpURLConnection connection = null;
         String result = "";
@@ -38,8 +38,8 @@ public class TaskSchedulerRequest {
             URL url = new URL(targetURL);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setConnectTimeout(10000);     // Connection Timeout (10 Sekunden)
-            connection.setReadTimeout(10000);        // Socket Timeout (10 Sekunden)
+            connection.setConnectTimeout(timeOut * 1000);     // Connection Timeout
+            connection.setReadTimeout(timeOut * 1000);        // Socket Timeout
             connection.setUseCaches(false);
             //Get Response
             int responseCode = connection.getResponseCode();

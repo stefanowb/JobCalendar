@@ -24,20 +24,43 @@ function changeServer() {
     var serverID = selectServerInput.options[selectServerInput.selectedIndex].id;
 
     var timeRangeInput = document.getElementById("timeRangeInput");
+    var timeoutInput = document.getElementById("timeoutInput");
     var timeRange = timeRangeInput.value;
-    if (timeRange == ""){
-        timeRange = 0;
-    }
+    var timeout = timeoutInput.value;
 
-    // entferne alle Kalendereinträge, die sich noch im Kalender befinden
-    var calendarEvents = JSON.parse(localStorage.getItem("calendarEvents"));
-    if (calendarEvents != null){
-        $.each(calendarEvents, function(i, val){
-            $('#calendar').fullCalendar('removeEvents',calendarEvents[i].id);
-        });
-    }
+    if (!isInt(timeRange)){
 
-    if(serverID >= 0){
+        jobCalendar.controller.GlobalNotification.showNotification(
+            jobCalendar.model.GlobalNotificationType.WARNING,
+            "Wrong TimeRange",
+            "Time Range must be an Integer Value",
+            5000);
+
+    } else if (!isInt(timeout)){
+
+        jobCalendar.controller.GlobalNotification.showNotification(
+            jobCalendar.model.GlobalNotificationType.WARNING,
+            "Wrong Timeout",
+            "Timeout must be an Integer Value",
+            5000);
+
+    } else if (!isInt(serverID)) {
+
+        jobCalendar.controller.GlobalNotification.showNotification(
+            jobCalendar.model.GlobalNotificationType.WARNING,
+            "No Server selected",
+            "Please Select a Server",
+            5000);
+
+    } else {
+
+        // entferne alle Kalendereinträge, die sich noch im Kalender befinden
+        var calendarEvents = JSON.parse(localStorage.getItem("calendarEvents"));
+        if (calendarEvents != null){
+            $.each(calendarEvents, function(i, val){
+                $('#calendar').fullCalendar('removeEvents',calendarEvents[i].id);
+            });
+        }
 
         var initData = JSON.parse(localStorage.getItem("initData"));
         var result = localStorage.getItem("result");
@@ -49,11 +72,19 @@ function changeServer() {
         exchangeObject.destination = 'SCalendar/calendarEventsRequest';
         var exchangeData = {
             serverName: serverName,
-            nextDaysRange: timeRange
+            nextDaysRange: timeRange,
+            timeOut: timeout
         };
         exchangeObject.data = exchangeData;
         jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
     }
+
+}
+
+function isInt(value) {
+    return !isNaN(value) &&
+        parseInt(Number(value)) == value &&
+        !isNaN(parseInt(value, 10));
 }
 
 jobCalendar.controller.MessageController = jobCalendar.controller.MessageController  || (function () {
