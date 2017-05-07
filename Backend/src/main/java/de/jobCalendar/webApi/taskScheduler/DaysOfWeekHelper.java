@@ -9,6 +9,7 @@ import java.util.TreeMap;
 public class DaysOfWeekHelper {
 
     private TreeMap<Integer, DayOfWeek> weekDaysMap;
+    private TreeMap<DayOfWeek, Integer> weekDayOrderMap;
 
     public DaysOfWeekHelper(){
         weekDaysMap = new TreeMap<>();
@@ -19,10 +20,23 @@ public class DaysOfWeekHelper {
         weekDaysMap.put(16, DayOfWeek.THURSDAY);
         weekDaysMap.put(32, DayOfWeek.FRIDAY);
         weekDaysMap.put(64, DayOfWeek.SATURDAY);
+
+        weekDayOrderMap = new TreeMap<>();
+        weekDayOrderMap.put(DayOfWeek.SUNDAY, 1);
+        weekDayOrderMap.put(DayOfWeek.MONDAY, 2);
+        weekDayOrderMap.put(DayOfWeek.TUESDAY, 3);
+        weekDayOrderMap.put(DayOfWeek.WEDNESDAY, 4);
+        weekDayOrderMap.put(DayOfWeek.THURSDAY, 5);
+        weekDayOrderMap.put(DayOfWeek.FRIDAY, 6);
+        weekDayOrderMap.put(DayOfWeek.SATURDAY, 7);
     }
 
     public TreeMap<Integer, DayOfWeek> getWeekDaysMap() {
         return weekDaysMap;
+    }
+
+    public TreeMap<DayOfWeek, Integer> getWeekDayOrderMap() {
+        return weekDayOrderMap;
     }
 
     /**
@@ -51,6 +65,9 @@ public class DaysOfWeekHelper {
 
     public int getDaysBetweenWeekdays(DayOfWeek fromDay, DayOfWeek toDay){
 
+        return weekDayOrderMap.get(toDay) - weekDayOrderMap.get(fromDay);
+
+        /*
         int dayCount = 0;
         boolean fromDayMatched = false;
         boolean toDayMatched = false;
@@ -79,6 +96,7 @@ public class DaysOfWeekHelper {
         }
 
         return dayCount;
+        */
     }
 
 }

@@ -1,12 +1,11 @@
 package main.java.de.jobCalendar.webApi.taskScheduler;
 
+import com.sun.javafx.binding.StringFormatter;
 import main.java.de.jobCalendar.webApi.scheduleConverter.ScheduleCalendar;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.time.DayOfWeek;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -25,6 +24,8 @@ public class TaskCalendarGenerator {
     private DateTimeFormatter isoFormatter;
     private DateTimeFormatter intervalFormatter;
     private DaysOfWeekHelper daysOfWeekHelper;
+    private MonthOfYearHelper monthOfYearHelper;
+    private WeeksOfMonthHelper weeksOfMonthHelper;
 
     public TaskCalendarGenerator(String taskSchedulerResult){
 
@@ -32,6 +33,8 @@ public class TaskCalendarGenerator {
         isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
         intervalFormatter = DateTimeFormatter.ISO_LOCAL_TIME;
         daysOfWeekHelper = new DaysOfWeekHelper();
+        monthOfYearHelper = new MonthOfYearHelper();
+        weeksOfMonthHelper = new WeeksOfMonthHelper();
     }
 
     public ArrayList<ScheduleCalendar> getScheduleCalendar(LocalDateTime fromDate, LocalDateTime toDate){
@@ -49,12 +52,19 @@ public class TaskCalendarGenerator {
             LocalDateTime start = LocalDateTime.parse(task.getString("start"), isoFormatter);
             LocalDateTime end = LocalDateTime.parse(task.getString("end"), isoFormatter);
             long eventDurationSeconds = start.until(end, SECONDS);
+            LocalTime startTime = start.toLocalTime();
 
             JSONArray triggers = task.getJSONArray("triggers");
 
             LocalDateTime currentEventStartTime;
             LocalDateTime currentRepititionWeekStart;
-            LocalDateTime currentRepititionWeekEnd;
+            int monthsOfYearCode;
+            TreeMap<Integer, Month> months;
+            int daysOfWeekCode;
+            TreeMap<Integer, DayOfWeek> daysOfWeek;
+            int weeksOfMonthCode;
+            TreeMap<Integer, Integer> weeksOfMonth;
+            int currentYear;
 
             for (Object triggerObject : triggers){
                 JSONObject trigger = (JSONObject)triggerObject;
@@ -83,16 +93,7 @@ public class TaskCalendarGenerator {
                                     start.isBefore(endBoundary)){
 
                                 // ein neues Event für den ersten Start erzeugen
-                                newCalenderEntry = new ScheduleCalendar();
-                                newCalenderEntry.setTitle(title);
-                                newCalenderEntry.setId(UUID.randomUUID().toString());
-                                newCalenderEntry.setStart(start);
-                                newCalenderEntry.setEnd(start.plus(eventDurationSeconds, SECONDS));
-                                scheduleCalendarList.add(newCalenderEntry);
-
-                                if (repitition != null){
-                                    addRepititionEvents(scheduleCalendarList, repitition, start, title, eventDurationSeconds);
-                                }
+                                addCalendarEventAndRepititions(scheduleCalendarList, title, start, eventDurationSeconds, repitition);
                             }
                             break;
                         case "Daily":
@@ -103,16 +104,7 @@ public class TaskCalendarGenerator {
                             while (currentEventStartTime.isBefore(triggerEnd)){
 
                                 // für jede Wiederholungstag ein neues Event erzeugen
-                                newCalenderEntry = new ScheduleCalendar();
-                                newCalenderEntry.setTitle(title);
-                                newCalenderEntry.setId(UUID.randomUUID().toString());
-                                newCalenderEntry.setStart(currentEventStartTime);
-                                newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
-                                scheduleCalendarList.add(newCalenderEntry);
-
-                                if (repitition != null){
-                                    addRepititionEvents(scheduleCalendarList, repitition, currentEventStartTime, title, eventDurationSeconds);
-                                }
+                                addCalendarEventAndRepititions(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds, repitition);
 
                                 currentEventStartTime = currentEventStartTime.plusDays(repititionIntervalDays);
                             }
@@ -121,8 +113,8 @@ public class TaskCalendarGenerator {
                         case "Weekly":
 
                             int repititionIntervalWeeks = trigger.getInt("weeksInterval");
-                            int daysOfWeekCode = trigger.getInt("daysOfWeek");
-                            TreeMap<Integer, DayOfWeek> daysOfWeek = daysOfWeekHelper.decodeDaysOfWeek(daysOfWeekCode);
+                            daysOfWeekCode = trigger.getInt("daysOfWeek");
+                            daysOfWeek = daysOfWeekHelper.decodeDaysOfWeek(daysOfWeekCode);
 
                             currentEventStartTime = start;
                             currentRepititionWeekStart = start;
@@ -139,20 +131,10 @@ public class TaskCalendarGenerator {
                                     int daysUntilStart = daysOfWeekHelper.getDaysBetweenWeekdays(startWeekDay, weekDay);
                                     currentEventStartTime = currentRepititionWeekStart.plusDays(daysUntilStart);
 
-                                    if (currentEventStartTime.isBefore(triggerEnd)){
+                                    if (currentEventStartTime.isBefore(triggerEnd) && !(currentEventStartTime.isBefore(start))){
                                         // für jede Wiederholungstag ein neues Event erzeugen
-                                        newCalenderEntry = new ScheduleCalendar();
-                                        newCalenderEntry.setTitle(title);
-                                        newCalenderEntry.setId(UUID.randomUUID().toString());
-                                        newCalenderEntry.setStart(currentEventStartTime);
-                                        newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
-                                        scheduleCalendarList.add(newCalenderEntry);
-
-                                        if (repitition != null){
-                                            addRepititionEvents(scheduleCalendarList, repitition, currentEventStartTime, title, eventDurationSeconds);
-                                        }
+                                        addCalendarEventAndRepititions(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds, repitition);
                                     }
-
                                 }
 
                                 currentRepititionWeekStart = currentRepititionWeekStart.plusDays(repititionIntervalWeeks * 7);
@@ -161,8 +143,152 @@ public class TaskCalendarGenerator {
 
                             break;
                         case "Monthly":
+
+                            monthsOfYearCode = trigger.getInt("monthsOfYear");
+                            JSONArray daysOfMonth = trigger.getJSONArray("daysOfMonth");
+                            boolean runOnLastDayOfMonth = trigger.getBoolean("runOnLastDayOfMonth");
+
+                            months = monthOfYearHelper.decodeMonths(monthsOfYearCode);
+
+                            currentEventStartTime = start;
+                            currentYear = start.getYear();
+
+                            // Jahre durch iterieren
+                            while (currentYear <= triggerEnd.getYear()) {
+
+                                // Monate durch iterieren
+                                for (Month currentMonth : months.values()){
+
+                                    int currentMonthValue = currentMonth.getValue();
+                                    int currentDay = 0;
+                                    LocalDate firstOfThisMonth = LocalDate.of(currentYear, currentMonthValue, 1);
+                                    boolean lastDayAdded = false;
+
+                                    if (firstOfThisMonth.isBefore(triggerEnd.toLocalDate())){
+
+                                        // alle Tage durchiterieren
+                                        for (int i = 0; i < daysOfMonth.length(); i++){
+
+                                            currentDay = daysOfMonth.getInt(i);
+
+                                            // damit man nicht den 31. Februar produziert
+                                            if (currentDay <= firstOfThisMonth.lengthOfMonth()){
+
+                                                LocalDate currentDate = LocalDate.of(currentYear, currentMonthValue, currentDay);
+                                                currentEventStartTime = LocalDateTime.of(currentDate, startTime);
+
+                                                if (currentEventStartTime.isBefore(triggerEnd) && !currentEventStartTime.isBefore(start)){
+                                                    // für jede Wiederholungstag ein neues Event erzeugen
+                                                    addCalendarEventAndRepititions(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds, repitition);
+
+                                                    if (currentDay == firstOfThisMonth.lengthOfMonth()){
+                                                        lastDayAdded = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // falls das Event auch am letzten Tag des Monats ausgeführt werden soll
+                                        // und noch nicht durch die anderen Tage abgedeckt wurde
+                                        if (runOnLastDayOfMonth && !lastDayAdded){
+
+                                            LocalDate currentDate = LocalDate.of(currentYear, currentMonthValue, firstOfThisMonth.lengthOfMonth());
+                                            currentEventStartTime = LocalDateTime.of(currentDate, startTime);
+
+                                            if (currentEventStartTime.isBefore(triggerEnd) && !currentEventStartTime.isBefore(start)){
+                                                // für jede Wiederholungstag ein neues Event erzeugen
+                                                addCalendarEventAndRepititions(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds, repitition);
+                                            }
+                                        }
+                                    }
+                                }
+                                currentYear ++;
+                            }
+
                             break;
                         case "MonthlyDOW":
+
+                            monthsOfYearCode = trigger.getInt("monthsOfYear");
+                            weeksOfMonthCode = trigger.getInt("weeksOfMonth");
+                            daysOfWeekCode = trigger.getInt("daysOfWeek");
+                            boolean runOnLastWeekOfMonth = trigger.getBoolean("runOnLastWeekOfMonth");
+
+                            months = monthOfYearHelper.decodeMonths(monthsOfYearCode);
+                            weeksOfMonth = weeksOfMonthHelper.decodeWeeks(weeksOfMonthCode);
+                            daysOfWeek = daysOfWeekHelper.decodeDaysOfWeek(daysOfWeekCode);
+
+                            currentYear = start.getYear();
+
+                            // Jahre durch iterieren
+                            while (currentYear <= triggerEnd.getYear()) {
+
+                                // Monate durch iterieren
+                                for (Month currentMonth : months.values()){
+
+                                    int currentMonthValue = currentMonth.getValue();
+                                    LocalDate firstOfThisMonth = LocalDate.of(currentYear, currentMonthValue, 1);
+                                    LocalDate lastOfThisMonth = LocalDate.of(currentYear, currentMonthValue, firstOfThisMonth.lengthOfMonth());
+                                    DayOfWeek lastWeekDayOfMonth = lastOfThisMonth.getDayOfWeek();
+
+                                    if (firstOfThisMonth.isBefore(triggerEnd.toLocalDate())){
+
+                                        // die ersten 7 Tage des Monats durchgehen
+                                        // damit hat man auch alle Wochentage einmal abgearbeitet
+                                        for (int i = 0; i < 7; i++){
+                                            LocalDate currentFirstWeekDay = firstOfThisMonth.plusDays(i);
+                                            DayOfWeek currentDayOfWeek = currentFirstWeekDay.getDayOfWeek();
+                                            boolean lastWeekAdded = false;
+
+                                            // soll der aktuelle Tag berücksichtigt werden?
+                                            if (daysOfWeek.values().contains(currentDayOfWeek)){
+
+                                                // ermittle den letzten des Monats für den Wochentag
+                                                LocalDate lastOfThisDay = null;
+                                                if (runOnLastWeekOfMonth){
+                                                    for (int j = 0; j < 7; j++){
+                                                        LocalDate currentLastWeekDay = lastOfThisMonth.plusDays(j * -1);
+                                                        if (currentLastWeekDay.getDayOfWeek().equals(currentDayOfWeek)){
+                                                            lastOfThisDay = currentLastWeekDay;
+                                                        }
+                                                    }
+                                                }
+
+                                                // alle berücksichtigten Wochen abarbeiten
+                                                for (int week : weeksOfMonth.values()){
+
+                                                    LocalDate currentStart = currentFirstWeekDay.plusDays((week - 1) * 7);
+                                                    // aufpassen, dass wir noch im richtigen Monat sind
+                                                    if (currentStart.getMonth().equals(currentMonth)){
+
+                                                        currentEventStartTime = LocalDateTime.of(currentStart, startTime);
+
+                                                        if (currentEventStartTime.isBefore(triggerEnd) && !currentEventStartTime.isBefore(start)){
+                                                            // für jede Wiederholungstag ein neues Event erzeugen
+                                                            addCalendarEventAndRepititions(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds, repitition);
+                                                            if (runOnLastWeekOfMonth && currentStart.equals(lastOfThisDay)){
+                                                                lastWeekAdded = true;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                // füge den letzten des Monats für den Tag hinzu
+                                                if (runOnLastWeekOfMonth && !lastWeekAdded){
+                                                    currentEventStartTime = LocalDateTime.of(lastOfThisDay, startTime);
+
+                                                    if (currentEventStartTime.isBefore(triggerEnd) && !currentEventStartTime.isBefore(start)){
+                                                        // für jede Wiederholungstag ein neues Event erzeugen
+                                                        addCalendarEventAndRepititions(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds, repitition);
+                                                    }
+                                                }
+                                            }
+                                        }
+
+
+                                    }
+                                }
+                                currentYear ++;
+                            }
+
                             break;
                         default:
                             break;
@@ -172,6 +298,47 @@ public class TaskCalendarGenerator {
         }
 
         return scheduleCalendarList;
+    }
+
+    /**
+     * fügt der übergebenen ScheduleCalendarList ein neues Event inklisive Wiederholungen hinzu
+     * @param scheduleCalendarList
+     * @param title
+     * @param currentEventStartTime
+     * @param eventDurationSeconds
+     * @param repitition
+     */
+    private void addCalendarEventAndRepititions(ArrayList<ScheduleCalendar> scheduleCalendarList,
+                                  String title,
+                                  LocalDateTime currentEventStartTime,
+                                  long eventDurationSeconds,
+                                  JSONObject repitition){
+
+        addCalendarEvent(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds);
+
+        if (repitition != null){
+            addRepititionEvents(scheduleCalendarList, repitition, currentEventStartTime, title, eventDurationSeconds);
+        }
+    }
+
+    /**
+     * fügt der übergebenen ScheduleCalendarList ein neues Event hinzu
+     * @param scheduleCalendarList
+     * @param title
+     * @param currentEventStartTime
+     * @param eventDurationSeconds
+     */
+    private void addCalendarEvent(ArrayList<ScheduleCalendar> scheduleCalendarList,
+                                  String title,
+                                  LocalDateTime currentEventStartTime,
+                                  long eventDurationSeconds){
+
+        ScheduleCalendar newCalenderEntry = new ScheduleCalendar();
+        newCalenderEntry.setTitle(title);
+        newCalenderEntry.setId(UUID.randomUUID().toString());
+        newCalenderEntry.setStart(currentEventStartTime);
+        newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
+        scheduleCalendarList.add(newCalenderEntry);
     }
 
     /**
@@ -187,7 +354,6 @@ public class TaskCalendarGenerator {
                                      LocalDateTime repititionStart,
                                      String title, long eventDurationSeconds){
 
-        ScheduleCalendar newCalenderEntry;
         LocalDateTime currentEventStartTime = repititionStart;
 
         IntervalSplitter intervalSplitter = new IntervalSplitter(repitition.getString("interval"), intervalFormatter);
@@ -210,12 +376,7 @@ public class TaskCalendarGenerator {
         while (currentEventStartTime.isBefore(durationEnd)){
 
             // für jede Repitition ein neues Event erzeugen
-            newCalenderEntry = new ScheduleCalendar();
-            newCalenderEntry.setTitle(title);
-            newCalenderEntry.setId(UUID.randomUUID().toString());
-            newCalenderEntry.setStart(currentEventStartTime);
-            newCalenderEntry.setEnd(currentEventStartTime.plus(eventDurationSeconds, SECONDS));
-            scheduleCalendarList.add(newCalenderEntry);
+            addCalendarEvent(scheduleCalendarList, title, currentEventStartTime, eventDurationSeconds);
 
             currentEventStartTime = currentEventStartTime.plusDays(intervalDays);
             currentEventStartTime = currentEventStartTime.plusHours(intervalTime.getHour());

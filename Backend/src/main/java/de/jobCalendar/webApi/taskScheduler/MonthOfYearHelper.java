@@ -9,6 +9,7 @@ import java.util.TreeMap;
 public class MonthOfYearHelper {
 
     private TreeMap<Integer, Month> monthsMap;
+    private TreeMap<Month, Integer> monthOrderMap;
 
     public MonthOfYearHelper(){
         monthsMap = new TreeMap<>();
@@ -24,6 +25,20 @@ public class MonthOfYearHelper {
         monthsMap.put(512, Month.OCTOBER);
         monthsMap.put(1024, Month.NOVEMBER);
         monthsMap.put(2048, Month.DECEMBER);
+
+        monthOrderMap = new TreeMap<>();
+        monthOrderMap.put(Month.JANUARY, 1);
+        monthOrderMap.put(Month.FEBRUARY, 2);
+        monthOrderMap.put(Month.MARCH, 3);
+        monthOrderMap.put(Month.APRIL, 4);
+        monthOrderMap.put(Month.MAY, 5);
+        monthOrderMap.put(Month.JUNE, 6);
+        monthOrderMap.put(Month.JULY , 7);
+        monthOrderMap.put(Month.AUGUST, 8);
+        monthOrderMap.put(Month.SEPTEMBER, 9);
+        monthOrderMap.put(Month.OCTOBER, 10);
+        monthOrderMap.put(Month.NOVEMBER, 11);
+        monthOrderMap.put(Month.DECEMBER, 12);
     }
 
     public TreeMap<Integer, Month> getMonthsMap() {
@@ -56,34 +71,7 @@ public class MonthOfYearHelper {
 
     public int getMonthsCountBetweenMonths(Month fromMonth, Month toMonth){
 
-        int dayCount = 0;
-        boolean fromMonthMatched = false;
-        boolean toMonthMatched = false;
-        int currentDayKey = 1;
-
-        while ( !(fromMonthMatched && toMonthMatched)){
-            if (currentDayKey > 2048){
-                currentDayKey = 1;
-            }
-
-            if (fromMonthMatched){
-                dayCount ++;
-            }
-
-            if (fromMonth == this.getMonthsMap().get(currentDayKey)){
-                fromMonthMatched = true;
-            }
-            if (fromMonthMatched){
-                if (toMonth == this.getMonthsMap().get(currentDayKey)){
-                    toMonthMatched = true;
-                }
-            }
-
-
-            currentDayKey *= 2;
-        }
-
-        return dayCount;
+        return monthOrderMap.get(toMonth) - monthOrderMap.get(fromMonth);
     }
 
 }
