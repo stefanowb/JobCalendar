@@ -22,6 +22,7 @@ public class TaskCalendarGenerator {
 
     private JSONArray taskArray;
     private DateTimeFormatter isoFormatter;
+    private DateTimeFormatter timeZoneFormatter;
     private DateTimeFormatter intervalFormatter;
     private DaysOfWeekHelper daysOfWeekHelper;
     private MonthOfYearHelper monthOfYearHelper;
@@ -31,6 +32,7 @@ public class TaskCalendarGenerator {
 
         taskArray = new JSONArray(taskSchedulerResult);
         isoFormatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+        timeZoneFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
         intervalFormatter = DateTimeFormatter.ISO_LOCAL_TIME;
         daysOfWeekHelper = new DaysOfWeekHelper();
         monthOfYearHelper = new MonthOfYearHelper();
@@ -49,8 +51,22 @@ public class TaskCalendarGenerator {
 
             String eventID = task.getString("id");
             String title = task.getString("title");
-            LocalDateTime start = LocalDateTime.parse(task.getString("start"), isoFormatter);
-            LocalDateTime end = LocalDateTime.parse(task.getString("end"), isoFormatter);
+            String startString = task.getString("start");
+            String endString = task.getString("end");
+            LocalDateTime start;
+            LocalDateTime end;
+
+            if (startString.contains("+")){
+                start = LocalDateTime.parse(task.getString("start"), timeZoneFormatter);
+            } else {
+                start = LocalDateTime.parse(task.getString("start"), isoFormatter);
+            }
+            if (endString.contains("+")){
+                end = LocalDateTime.parse(task.getString("end"), timeZoneFormatter);
+            } else {
+                end = LocalDateTime.parse(task.getString("end"), isoFormatter);
+            }
+
             long eventDurationSeconds = start.until(end, SECONDS);
             LocalTime startTime = start.toLocalTime();
 
@@ -69,8 +85,24 @@ public class TaskCalendarGenerator {
             for (Object triggerObject : triggers){
                 JSONObject trigger = (JSONObject)triggerObject;
 
-                LocalDateTime startBoundary = LocalDateTime.parse(trigger.getString("startBoundary"), isoFormatter);
-                LocalDateTime endBoundary = LocalDateTime.parse(trigger.getString("endBoundary"), isoFormatter);
+                LocalDateTime startBoundary;
+                LocalDateTime endBoundary;
+                String startBoundaryString = trigger.getString("startBoundary");
+                String endBoundaryString = trigger.getString("endBoundary");
+
+                if (startBoundaryString.contains("+")){
+                    startBoundary = LocalDateTime.parse(trigger.getString("startBoundary"), timeZoneFormatter);
+                } else {
+                    startBoundary = LocalDateTime.parse(trigger.getString("startBoundary"), isoFormatter);
+                }
+
+                if (endBoundaryString.contains("+")){
+                    endBoundary = LocalDateTime.parse(trigger.getString("endBoundary"), timeZoneFormatter);
+                } else {
+                    endBoundary = LocalDateTime.parse(trigger.getString("endBoundary"), isoFormatter);
+                }
+
+
                 LocalDateTime triggerEnd = toDate;
                 if (endBoundary.isBefore(toDate)){
                     triggerEnd = endBoundary;
