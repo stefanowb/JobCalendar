@@ -5,7 +5,7 @@ jobCalendar.core.WebSocketConnector.connectToServer(WS_URL, webSocketConnectionE
 
 function webSocketConnectionEstablished(obj) {
     if (jobCalendar.core.WebSocketConnector.isConnected()) {
-
+        //Teständerrung für Push
         // nachdem die Websocket-Verbindung aufgebaut wurde holt sich das Frontend
         // die Liste der verfügbaren Server vom Backend
         var exchangeObject = Object.create(jobCalendar.model.Request);
