@@ -54,16 +54,18 @@ function changeServer() {
 
     } else {
 
-        // entferne alle Kalendereinträge, die sich noch im Kalender befinden
-        var calendarEvents = JSON.parse(localStorage.getItem("calendarEvents"));
-        if (calendarEvents != null){
-            $.each(calendarEvents, function(i, val){
-                $('#calendar').fullCalendar('removeEvents',calendarEvents[i].id);
-            });
-        }
-
         var initData = JSON.parse(localStorage.getItem("initData"));
         var result = localStorage.getItem("result");
+
+        var check = null;
+        check = localStorage.getItem("check");
+
+        console.log(check);
+
+        if(check != null){
+            clearCalendar();
+        }
+
 
         // Zentrale INIT Variablen
         var serverName = initData[serverID].name;
@@ -79,6 +81,21 @@ function changeServer() {
         jobCalendar.core.WebSocketConnector.sendRequest(exchangeObject);
     }
 
+}
+
+// Löscht alle Einträge im Kalender
+function clearCalendar() {
+    var parsedArray = null;
+
+    parsedArray = JSON.parse(localStorage.getItem("calendarE"));
+
+    console.log(parsedArray);
+
+    $.each(parsedArray, function(i, val){
+        $('#calendar').fullCalendar('removeEvents',parsedArray[i].id);
+    });
+
+    // ShowCalenderEventsArrayInCalender();
 }
 
 function isInt(value) {
@@ -137,9 +154,7 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                 $.each(parsedArray, function(i, val){
                     $select.append($('<option />', { id: parsedArray[i].id, text: parsedArray[i].name }));
                 });
-
-                clearCalendar();
-
+                ShowCalenderEventsArrayInCalender();
             } else {
 
                 var outputHeader = 'Server: Error while reading the ini file.';
@@ -153,7 +168,11 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
 
         function setCalendarEventsFunktion(messageData, result, errorMessage) {
             if (result == 'success') {
-                ShowCalenderEventsArrayInCalender(messageData.calendarEvents);
+
+                localStorage.setItem("calendarE", JSON.stringify(messageData.calendarEvents));
+
+                setCalendar();
+                // ShowCalenderEventsArrayInCalender(messageData.calendarEvents);
             } else {
 
                 var outputHeader = '';
@@ -190,20 +209,17 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
             }
         }
 
-        // Löscht alle Einträge im Kalender
-        function clearCalendar(calendarEvents) {
+        function setCalendar() {
+
             var parsedArray = null;
 
-            if(calendarEvents != null) {
-                //werden gesetzt um sie wieder löschen zu können
-                localStorage.setItem("calendarEvents", calendarEvents);
+            parsedArray = JSON.parse(localStorage.getItem("calendarE"));
 
-                parsedArray = JSON.parse(calendarEvents);
-
-                $.each(parsedArray, function(i, val){
-                    $('#calendar').fullCalendar( 'renderEvent', parsedArray[i] );
-                });
-            }
+            $.each(parsedArray, function(i, val){
+                $('#calendar').fullCalendar( 'renderEvent', parsedArray[i]);
+            });
+            localStorage.setItem("check", true);
+            ShowCalenderEventsArrayInCalender();
         }
 
         function ShowCalenderEventsArrayInCalender(calenderEventsArray) {
@@ -218,8 +234,8 @@ jobCalendar.controller.MessageController = jobCalendar.controller.MessageControl
                     defaultDate: new Date(),
                     editable: true,
                     navLinks: true, // can click day/week names to navigate views
-                    eventLimit: true, // allow "more" link when too many events
-                    events: calenderEventsArray
+                    eventLimit: true // allow "more" link when too many events
+                    // events: calenderEventsArray
                 });
 
             });
